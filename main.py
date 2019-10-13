@@ -2,73 +2,11 @@ import requests
 import time
 import multiprocessing
 import menu
-import user_api
-import conversations_api
 import longpoll
-import group_background_process
 import vk_api
-import db_api
 import user_class
-import text_extension as t_ext
-# import longpoll_test as longpoll
-# import vk_api_test as vk_api
 import os
 from Keys import Keys
-
-
-# private_group_token='57f01a1f0384e151ae68d6b2e1129c078c821886f5b5e77ee0a3e9390c69ef70accd490a9eabe98978b83'
-
-# class LastRequest(object):
-#     def __init__(self, initval=0.0):
-#         self.time = multiprocessing.Value('d', initval)
-#
-#     def update(self):
-#         with self.time.get_lock():
-#             self.time.value = time.time()
-#
-#     def get_time(self):
-#         with self.time.get_lock():
-#             return self.time.value
-#
-#
-# class User(object):
-#     def __init__(self, request_times, user_id, peer_id, db_filename, db_lock):
-#         self.peer_id = peer_id
-#         self.stdin = multiprocessing.Queue()
-#         if user_id == peer_id:
-#             self.process = multiprocessing.Process(target=user_api.main,
-#                                                    args=(request_times, self.stdin, user_id, db_filename, db_lock))
-#             self.process.start()
-#             self.last_action_time = time.time()
-#         else:
-#             self.process = multiprocessing.Process(target=conversations_api.main,
-#                                                    args=(request_times, self.stdin, peer_id, db_filename, db_lock))
-#             self.process.start()
-#             self.last_action_time = time.time()
-#
-#     def is_working(self, timeout):
-#         try:
-#             if time.time() - self.last_action_time > timeout:
-#                 self.process.terminate()
-#                 keyboard = vk_api.KeyConstruct().one_button('Я снова тут').get_buttons()
-#                 bot_api.msg_send(self.peer_id, '', attachments=[t_ext.sticker('goodbye')], keyboard=keyboard)
-#                 return False
-#             return True
-#         except Exception as e:
-#             print('main User.process.is_working()', e, 'peer_id', self.peer_id)
-#
-#
-# def clear_offline_users(user_dict):
-#     offline_users = []
-#     for key, user in user_dict.items():
-#         try:
-#             if not user.process.is_alive() or not user.is_working(15*60):
-#                 offline_users.append(key)
-#         except Exception as e:
-#             print('clear_offline_users', e, 'peer_id', user.peer_id)
-#     for key in offline_users:
-#         user_dict.pop(key)
-#         print('user %s is offline' % key)
 
 
 if __name__ == '__main__':
@@ -77,6 +15,7 @@ if __name__ == '__main__':
     user_class.User.create_table()
     user_class.RpProfile.create_table()
     user_class.ProfileOwner.create_table()
+    user_class.RoleOffer.create_table()
 
     longpoll_stdout = multiprocessing.Queue()
     longpoll_listner = multiprocessing.Process(target=longpoll.listen, args=(longpoll_stdout,))

@@ -9,3 +9,7 @@ log/main_log.txt
 longpoll_test.py
 people.db
 tests.py
+log/long_poll_log (2).txt
+log/main_log (2).txt
+*.db-wal
+*.db-shm

@@ -45,6 +45,51 @@ class ProfileOwner(peewee.Model):
         database = db
 
 
+class RoleOffer(peewee.Model):
+    from_owner_id = peewee.IntegerField()
+    from_profile_id = peewee.IntegerField()
+    to_owner_id = peewee.IntegerField()
+    to_profile_id = peewee.IntegerField()
+
+    class Meta:
+        database = db
+
+    def create_offer(self, from_profile_id, to_profile_id):
+        try:
+            from_owner_id = get_profile_owner(from_profile_id)
+            to_owner_id = get_profile_owner(to_profile_id)
+            new_rp_offer = self.create(from_owner_id=from_owner_id,
+                                       from_profile_id=from_profile_id,
+                                       to_owner_id=to_owner_id,
+                                       to_profile_id=to_profile_id)
+            return new_rp_offer
+        except:
+            return False
+
+    def get_offers_from_user(self, user_id):
+        try:
+            user_offers = self.select().where(RoleOffer.from_owner_id == user_id)
+            return user_offers
+        except self.DoesNotExist:
+            return []
+
+    def get_offers_to_user(self, user_id):
+        try:
+            user_offers = self.select().where(RoleOffer.to_owner_id == user_id)
+            return user_offers
+        except self.DoesNotExist:
+            return []
+
+    def delete_offer(self, from_profile_id, to_profile_id):
+        try:
+            delete_profile = self.delete().where((RoleOffer.from_profile_id == from_profile_id) &
+                                                 (RoleOffer.to_profile_id == to_profile_id))
+            delete_profile.execute()
+            return True
+        except RpProfile.DoesNotExist:
+            return False
+
+
 def get_user_profiles(user_id):
     try:
         profiles_ids = ProfileOwner.select().where(ProfileOwner.owner_id == user_id)

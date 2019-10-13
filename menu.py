@@ -239,8 +239,10 @@ def change_fetishes(user_message):
     user_info = user_class.get_user(user_message['from_id'])
     profile = user_class.get_rp_profile(user_info.item_id)
 
-    user_fetishes = json.loads(profile.fetish_list)
-    user_taboos = json.loads(profile.taboo_list)
+    user_fetishes = [i for i in json.loads(profile.fetish_list) if i in fetishes]
+    user_taboos = [i for i in json.loads(profile.taboo_list) if i in fetishes]
+    profile.fetish_list = json.dumps(user_fetishes, ensure_ascii=False)
+    profile.taboo_list = json.dumps(user_taboos, ensure_ascii=False)
 
     if user_message['payload']['arguments']:
         if user_message['payload']['arguments'] in user_fetishes:
@@ -384,7 +386,6 @@ def choose_profile_to_search(user_message):
 
 def search_by_profile(user_message):
     profiles_per_page = 4
-    # TODO сделать странички через offset
     user_info = user_class.get_user(user_message['from_id'])
     try:
         if 'profile_id' in user_message['payload']['arguments']:
@@ -396,12 +397,21 @@ def search_by_profile(user_message):
         pass
 
     suitable_profiles = user_class.find_suitable_profiles(user_info.item_id)
-    message = 'Список анкет подходящих к вашей'
+    sent_profiles = [pr.to_profile_id for pr in user_class.RoleOffer().get_offers_from_user(user_info.id)]
+    confirmed_profiles = [pr.from_profile_id for pr in user_class.RoleOffer().get_offers_to_user(user_info.id)]
+    message = 'Список анкет подходящих к вашей.\n' \
+              'Синим отправленные предложения.\n' \
+              'Зелёным - взаимные предложения.'
     pr_buttons = list()
     for pr in suitable_profiles[user_info.list_iter * profiles_per_page:(user_info.list_iter + 1) * profiles_per_page]:
+        color = 'default'
+        if pr.id in sent_profiles:
+            color = 'primary'
+            if pr.id in confirmed_profiles:
+                color = 'positive'
         pr_buttons.append([vk_api.new_button(pr.name,
                                              {'menu_id': 'show_player_profile',
-                                              'arguments': {'profile_id': pr.id}})])
+                                              'arguments': {'profile_id': pr.id}}, color)])
 
     prew_color, next_color, prew_iter, next_iter = 'default', 'default', user_info.list_iter, user_info.list_iter
     if user_info.list_iter > 0:
@@ -426,9 +436,25 @@ def show_player_profile(user_message):
     except:
         pass
 
+    try:
+        if user_message['payload']['arguments']['offer']:
+            user_class.RoleOffer().create_offer(user_info.item_id, user_info.tmp_item_id)
+        else:
+            user_class.RoleOffer().delete_offer(user_info.item_id, user_info.tmp_item_id)
+    except Exception as e:
+        print(e)
+        pass
+
     message = rp_profile_display(user_info.tmp_item_id)
+    sent_profiles = [pr.to_profile_id for pr in user_class.RoleOffer().get_offers_from_user(user_info.id)]
+    if user_info.tmp_item_id in sent_profiles:
+        button_offer = vk_api.new_button('Отменить предложение', {'menu_id': 'show_player_profile',
+                                                                'arguments': {'offer': False}}, 'negative')
+    else:
+        button_offer = vk_api.new_button('Предложить ролевую', {'menu_id': 'show_player_profile',
+                                                                'arguments': {'offer': True}}, 'positive')
     button_back = vk_api.new_button('К списку анкет', {'menu_id': 'search_by_profile', 'arguments': None}, 'primary')
-    message.update({'keyboard': [[button_back]]})
+    message.update({'keyboard': [[button_offer], [button_back]]})
     return message
 
 
@@ -440,6 +466,8 @@ def notifications(user_message):
     button_main = vk_api.new_button('Главное меню', {'menu_id': 'main', 'arguments': None}, 'primary')
     return {'message': message, 'keyboard': [[button_main]]}
 
+def role_offers(user_message):
+    pass
 
 def user_account(user_message):
     message = 'Настройки аккаунта'
