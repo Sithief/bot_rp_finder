@@ -1,6 +1,7 @@
 import vk_api
 import user_class
 import json
+import text_extension as t_ext
 
 genders = ['Мужской', 'Женский', 'Другой', 'Не указано']
 orientation = ['Гетеро', 'Би', 'Гомо', 'Не указано']
@@ -178,12 +179,11 @@ def save_name(user_message):
         message = f'Это не слишком похоже на имя персонажа, вам так не кажется?'
         return {'message': message, 'keyboard': [[button_return, button_try_again]]}
 
-    if not all([i in symbols for i in user_message['text'].lower()]):
-        error_symbols = ['"'+ i +'"' for i in user_message['text'].lower() if not i in symbols]
+    error_symbols = [f'"{i}"' for i in user_message['text'].lower() if i not in symbols]
+    if error_symbols:
         message = f"Имя содержит недопустимые символы: {' '.join(error_symbols)}"
         return {'message': message, 'keyboard': [[button_return, button_try_again]]}
 
-    # TODO добавить проверки ввода
     user_info = user_class.get_user(user_message['from_id'])
     rp_profile = user_class.get_rp_profile(user_info.item_id)
     rp_profile.name = user_message['text']
@@ -385,7 +385,7 @@ def choose_profile_to_search(user_message):
 
 
 def search_by_profile(user_message):
-    profiles_per_page = 4
+    profiles_per_page = 5
     user_info = user_class.get_user(user_message['from_id'])
     try:
         if 'profile_id' in user_message['payload']['arguments']:
@@ -411,7 +411,9 @@ def search_by_profile(user_message):
                 color = 'positive'
         pr_buttons.append([vk_api.new_button(pr.name,
                                              {'menu_id': 'show_player_profile',
-                                              'arguments': {'profile_id': pr.id}}, color)])
+                                              'arguments': {'profile_id': pr.id,
+                                                            'prew_menu_id': 'search_by_profile',
+                                                            'prew_menu_label': 'К списку анкет'}}, color)])
 
     prew_color, next_color, prew_iter, next_iter = 'default', 'default', user_info.list_iter, user_info.list_iter
     if user_info.list_iter > 0:
@@ -425,7 +427,15 @@ def search_by_profile(user_message):
     button_next = vk_api.new_button('Следующая страница', {'menu_id': 'search_by_profile',
                                                            'arguments': {'iter': next_iter}}, next_color)
     button_main = vk_api.new_button('Главное меню', {'menu_id': 'main', 'arguments': None}, 'primary')
-    return {'message': message, 'keyboard': pr_buttons + [[button_prew, button_next]] + [[button_main]]}
+    return {'message': message, 'keyboard': pr_buttons + [[button_prew, button_main, button_next]]}
+
+
+def choose_preset_to_search(user_message):
+    pass
+
+
+def search_by_preset(user_message):
+    pass
 
 
 def show_player_profile(user_message):
@@ -445,15 +455,33 @@ def show_player_profile(user_message):
         print(e)
         pass
 
-    message = rp_profile_display(user_info.tmp_item_id)
     sent_profiles = [pr.to_profile_id for pr in user_class.RoleOffer().get_offers_from_user(user_info.id)]
+    confirmed_profiles = [pr.from_profile_id for pr in user_class.RoleOffer().get_offers_to_user(user_info.id)]
+
+    message = rp_profile_display(user_info.tmp_item_id)
+    if user_info.tmp_item_id in sent_profiles and user_info.tmp_item_id in confirmed_profiles:
+        player_id = user_class.get_profile_owner(user_info.tmp_item_id)
+        player_info = user_class.get_user(player_id)
+        message['message'] = f'Анкета игрока [id{player_info.id}|{player_info.name}]\n' + \
+                             f'У вас взаимная симпатия, можете ' \
+                             f'{t_ext.gender_msg("ему", "ей", player_info.is_fem)} написать.\n\n' + \
+                             message['message']
+
     if user_info.tmp_item_id in sent_profiles:
         button_offer = vk_api.new_button('Отменить предложение', {'menu_id': 'show_player_profile',
-                                                                'arguments': {'offer': False}}, 'negative')
+                                                                  'arguments': {'offer': False}}, 'negative')
     else:
         button_offer = vk_api.new_button('Предложить ролевую', {'menu_id': 'show_player_profile',
                                                                 'arguments': {'offer': True}}, 'positive')
-    button_back = vk_api.new_button('К списку анкет', {'menu_id': 'search_by_profile', 'arguments': None}, 'primary')
+
+    try:
+        button_back = vk_api.new_button(user_message['payload']['arguments']['prew_menu_label'],
+                                        {'menu_id': user_message['payload']['arguments']['prew_menu_id'],
+                                         'arguments': None}, 'primary')
+    except:
+        button_back = vk_api.new_button('В главное меню',
+                                        {'menu_id': 'main',
+                                         'arguments': None}, 'primary')
     message.update({'keyboard': [[button_offer], [button_back]]})
     return message
 
@@ -466,8 +494,6 @@ def notifications(user_message):
     button_main = vk_api.new_button('Главное меню', {'menu_id': 'main', 'arguments': None}, 'primary')
     return {'message': message, 'keyboard': [[button_main]]}
 
-def role_offers(user_message):
-    pass
 
 def user_account(user_message):
     message = 'Настройки аккаунта'

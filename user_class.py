@@ -90,6 +90,72 @@ class RoleOffer(peewee.Model):
             return False
 
 
+class SearchPresetOwner(peewee.Model):
+    preser_id = peewee.IntegerField()
+    owner_id = peewee.IntegerField()
+
+    class Meta:
+        database = db
+
+    def create_owner(self, profile_id, owner_id):
+        owner = self.create(profile_id=profile_id, owner_id=owner_id)
+        return owner
+
+    def get_user_presets(self, owner_id):
+        try:
+            presets_ids = self.select().where(SearchPresetOwner.owner_id == owner_id)
+            return presets_ids
+        except:
+            return []
+
+    def delete_owner(self, profile_id):
+        try:
+            delete_owner = self.delete().where(SearchPresetOwner.profile_id == profile_id)
+            delete_owner.execute()
+            return True
+        except:
+            return False
+
+
+class SearchPreset(peewee.Model):
+    name = peewee.CharField(default='Не указано')
+    gender = peewee.CharField(default='Не указано')
+    orientation = peewee.CharField(default='Не указано')
+    fetish_list = peewee.CharField(default='[]')
+
+    class Meta:
+        database = db
+
+    def create_preset(self, user_id):
+        new_preset = self.create()
+        SearchPresetOwner().create_owner(new_preset.id, user_id)
+        return new_preset
+
+    def get_preset(self, preset_id):
+        try:
+            search_preset = self.get(SearchPreset.id == preset_id)
+            return search_preset
+        except:
+            return False
+
+    def get_user_presets(self, user_id):
+        try:
+            preset_ids = [pr.id for pr in SearchPresetOwner().get_user_presets(user_id)]
+            presets_info = self.select().where(SearchPreset.id << preset_ids)
+            return presets_info
+        except:
+            return []
+
+    def delete_preset(self, preset_id):
+        try:
+            delete_preset = self.delete().where(SearchPreset.id == preset_id)
+            delete_preset.execute()
+            SearchPresetOwner().delete_owner(preset_id)
+            return True
+        except:
+            return False
+
+
 def get_user_profiles(user_id):
     try:
         profiles_ids = ProfileOwner.select().where(ProfileOwner.owner_id == user_id)

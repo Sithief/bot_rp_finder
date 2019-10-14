@@ -16,6 +16,8 @@ if __name__ == '__main__':
     user_class.RpProfile.create_table()
     user_class.ProfileOwner.create_table()
     user_class.RoleOffer.create_table()
+    user_class.SearchPreset.create_table()
+    user_class.SearchPresetOwner.create_table()
 
     longpoll_stdout = multiprocessing.Queue()
     longpoll_listner = multiprocessing.Process(target=longpoll.listen, args=(longpoll_stdout,))
