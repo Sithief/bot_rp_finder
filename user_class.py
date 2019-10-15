@@ -27,9 +27,7 @@ class User(peewee.Model):
 class RpProfile(peewee.Model):
     name = peewee.CharField(default='Не указано')
     gender = peewee.CharField(default='Не указано')
-    orientation = peewee.CharField(default='Не указано')
-    fetish_list = peewee.CharField(default='[]')
-    taboo_list = peewee.CharField(default='[]')
+    setting_list = peewee.CharField(default='[]')
     description = peewee.CharField(default='Не указано')
     arts = peewee.CharField(default='[]')
 
@@ -135,27 +133,22 @@ def delete_rp_profile(profile_id):
 
 def count_similarity_score(user_profile, player_profile):
     score = 0
-    user_fetishes = set(json.loads(user_profile.fetish_list))
-    player_fetishes = set(json.loads(player_profile.fetish_list))
-    user_taboos = set(json.loads(user_profile.taboo_list))
-    player_taboos = set(json.loads(player_profile.taboo_list))
+    user_setting = set(json.loads(user_profile.setting_list))
+    player_setting = set(json.loads(player_profile.setting_list))
 
-    score += len(user_fetishes & player_fetishes)
-    score += len(user_taboos & player_taboos)
-    score -= len(user_fetishes & player_taboos)
-    score -= len(user_taboos & player_fetishes)
+    score += len(user_setting & player_setting)
     return score
 
 
 def find_suitable_profiles(profile_id):
-    # TODO доделать поиск по остальным параметрам и добавить скоринг
+    # TODO доделать поиск по остальным параметрам
     try:
         user_profile = get_rp_profile(profile_id)
         other_user_profiles = [profile.id for profile in get_user_profiles(get_profile_owner(profile_id))]
-        fetishes = json.loads(user_profile.fetish_list)
+        setting_list = json.loads(user_profile.setting_list)
         suitable_profiles = []
-        for fetish in fetishes:
-            suit_prof = RpProfile.select().where((RpProfile.fetish_list.contains(fetish) &
+        for setting in setting_list:
+            suit_prof = RpProfile.select().where((RpProfile.setting_list.contains(setting) &
                                                   RpProfile.id.not_in(other_user_profiles)))
             suitable_profiles += [sp for sp in suit_prof]
 

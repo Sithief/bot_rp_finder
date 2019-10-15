@@ -2,9 +2,8 @@ import vk_api
 import user_class
 import json
 
-genders = ['Мужской', 'Женский', 'Другой', 'Не указано']
-orientation = ['Гетеро', 'Би', 'Гомо', 'Не указано']
-fetishes = ['фетиш 1', 'фетиш 2', 'фетиш 3', 'фетиш 4', 'фетиш 5', 'фетиш 6']
+genders = ['Мужской', 'Женский', 'Не указано']
+setting = ['Повседневность', 'Средневековье', 'Фентези', 'Научная фантастика']
 
 
 def menu_hub(user_message):
@@ -14,8 +13,7 @@ def menu_hub(user_message):
              'change_profile': change_profile,
              'change_name': change_name, 'save_name': save_name,
              'change_gender': change_gender,
-             'change_orientation': change_orientation,
-             'change_fetishes': change_fetishes,
+             'change_setting_list': change_setting_list,
              'change_description': change_description, 'save_description': save_description,
              'change_images': change_images, 'input_images': input_images, 'save_images': save_images,
              'profiles_search': profiles_search,
@@ -45,12 +43,10 @@ def main(user_message):
     message = 'Главное меню'
     button_profiles = vk_api.new_button('Мои анкеты', {'menu_id': 'user_profiles'})
     button_search = vk_api.new_button('Найти соигроков', {'menu_id': 'profiles_search'}, 'positive')
-    button_notifications = vk_api.new_button('Мои Уведомления', {'menu_id': 'notifications'})
-    button_user_account = vk_api.new_button('Настройки аккаунта', {'menu_id': 'user_account'})
+    # button_notifications = vk_api.new_button('Мои Уведомления', {'menu_id': 'notifications'})
+    # button_user_account = vk_api.new_button('Настройки аккаунта', {'menu_id': 'user_account'})
     return {'message': message, 'keyboard': [[button_profiles],
-                                                  [button_search],
-                                                  [button_notifications],
-                                                  [button_user_account]]}
+                                             [button_search]]}
 
 # создание и изменение анкет
 
@@ -82,14 +78,9 @@ def rp_profile_display(profile_id):
     profile['message'] += f'Имя: {rp_profile.name}\n'
     if rp_profile.gender != 'Не указано':
         profile['message'] += f'Пол: {rp_profile.gender}\n'
-    if rp_profile.orientation != 'Не указано':
-        profile['message'] += f'Ориентация: {rp_profile.orientation}\n'
-    user_fetishes = json.loads(rp_profile.fetish_list)
-    if user_fetishes:
-        profile['message'] += f'Фетиши: {", ".join(user_fetishes)}\n'
-    user_taboos = json.loads(rp_profile.taboo_list)
-    if user_taboos:
-        profile['message'] += f'Табу: {", ".join(user_taboos)}\n'
+    user_setting_list = json.loads(rp_profile.setting_list)
+    if user_setting_list:
+        profile['message'] += f'Сеттинг: {", ".join(user_setting_list)}\n'
     profile['message'] += f'Описание: {rp_profile.description}\n'
     profile['attachment'] = ','.join(json.loads(rp_profile.arts))
     return profile
@@ -134,10 +125,8 @@ def change_profile(user_message):
     button_main = vk_api.new_button('Главное меню', {'menu_id': 'main', 'arguments': None}, 'primary')
     buttons_change_name = vk_api.new_button('Изменить имя', {'menu_id': 'change_name', 'arguments': None})
     buttons_change_gender = vk_api.new_button('Изменить пол', {'menu_id': 'change_gender', 'arguments': None})
-    buttons_change_orientation = vk_api.new_button('Изменить ориентацию',
-                                                   {'menu_id': 'change_orientation', 'arguments': None})
-    buttons_change_fetishes = vk_api.new_button('Изменить список фетишей',
-                                                {'menu_id': 'change_fetishes', 'arguments': None})
+    buttons_change_setting = vk_api.new_button('Изменить сеттинг',
+                                               {'menu_id': 'change_setting_list', 'arguments': None})
     buttons_change_description = vk_api.new_button('Изменить описание',
                                                    {'menu_id': 'change_description', 'arguments': None})
     buttons_change_images = vk_api.new_button('Изменить изображения',
@@ -147,8 +136,8 @@ def change_profile(user_message):
     return {'message': message['message'],
             'attachment': message['attachment'],
             'keyboard': [[buttons_change_name, buttons_change_description],
-                         [buttons_change_gender, buttons_change_orientation],
-                         [buttons_change_fetishes, buttons_change_images],
+                         [buttons_change_gender, buttons_change_setting],
+                         [buttons_change_images],
                          [buttons_delete],
                          [button_main]]}
 
@@ -213,71 +202,38 @@ def change_gender(user_message):
     return {'message': message, 'keyboard': [gen_btn, [button_return]]}
 
 
-def change_orientation(user_message):
+def change_setting_list(user_message):
     user_info = user_class.get_user(user_message['from_id'])
     profile = user_class.get_rp_profile(user_info.item_id)
 
-    if user_message['payload']['arguments']:
-        profile.orientation = user_message['payload']['arguments']
-        profile.save()
-
-    message = 'Выберите сексуальную ориентацию вашего персонажа'
-
-    orient_btn = list()
-    for orient in orientation:
-        color = 'default'
-        if profile.orientation == orient:
-            color = 'positive'
-        orient_btn.append(vk_api.new_button(orient, {'menu_id': 'change_orientation', 'arguments': orient}, color))
-
-    button_return = vk_api.new_button('Вернуться к анкете',
-                                      {'menu_id': 'change_profile', 'arguments': None}, 'primary')
-    return {'message': message, 'keyboard': [orient_btn, [button_return]]}
-
-
-def change_fetishes(user_message):
-    user_info = user_class.get_user(user_message['from_id'])
-    profile = user_class.get_rp_profile(user_info.item_id)
-
-    user_fetishes = [i for i in json.loads(profile.fetish_list) if i in fetishes]
-    user_taboos = [i for i in json.loads(profile.taboo_list) if i in fetishes]
-    profile.fetish_list = json.dumps(user_fetishes, ensure_ascii=False)
-    profile.taboo_list = json.dumps(user_taboos, ensure_ascii=False)
+    user_setting = [i for i in json.loads(profile.setting_list) if i in setting]
+    profile.setting_list = json.dumps(user_setting, ensure_ascii=False)
 
     if user_message['payload']['arguments']:
-        if user_message['payload']['arguments'] in user_fetishes:
-            user_fetishes.remove(user_message['payload']['arguments'])
-            user_taboos.append(user_message['payload']['arguments'])
-            profile.fetish_list = json.dumps(user_fetishes, ensure_ascii=False)
-            profile.taboo_list = json.dumps(user_taboos, ensure_ascii=False)
-
-        elif user_message['payload']['arguments'] in user_taboos:
-            user_taboos.remove(user_message['payload']['arguments'])
-            profile.taboo_list = json.dumps(user_taboos, ensure_ascii=False)
+        if user_message['payload']['arguments'] in user_setting:
+            user_setting.remove(user_message['payload']['arguments'])
+            profile.setting_list = json.dumps(user_setting, ensure_ascii=False)
 
         else:
-            user_fetishes.append(user_message['payload']['arguments'])
-            profile.fetish_list = json.dumps(user_fetishes, ensure_ascii=False)
+            user_setting.append(user_message['payload']['arguments'])
+            profile.setting_list = json.dumps(user_setting, ensure_ascii=False)
 
-        profile.save()
+    profile.save()
 
-    message = 'Выберите подходящие фетиши:\n' \
-              '• Первое нажатие добавляет фетиш\n' \
-              '• Второе - переводит в список табу\n' \
-              '• Третье - убирает из списков'
+    message = 'Выберите подходящие сеттинги для игры:\n' \
+              '• Первое нажатие добавляет в список\n' \
+              '• Второе - убирает из списка'
 
-    fetish_btn = list()
-    for fetish in fetishes:
+    setting_btn = list()
+    for stt in setting:
         color = 'default'
-        if fetish in user_fetishes:
+        if stt in user_setting:
             color = 'positive'
-        elif fetish in user_taboos:
-            color = 'negative'
-        fetish_btn.append(vk_api.new_button(fetish, {'menu_id': 'change_fetishes', 'arguments': fetish}, color))
+        setting_btn.append(vk_api.new_button(stt, {'menu_id': 'change_setting_list', 'arguments': stt}, color))
 
     button_return = vk_api.new_button('Вернуться к анкете',
                                       {'menu_id': 'change_profile', 'arguments': None}, 'primary')
-    return {'message': message, 'keyboard': [fetish_btn, [button_return]]}
+    return {'message': message, 'keyboard': [setting_btn, [button_return]]}
 
 
 def change_description(user_message):
