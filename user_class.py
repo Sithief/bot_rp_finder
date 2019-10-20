@@ -88,10 +88,75 @@ class RoleOffer(peewee.Model):
             return False
 
 
-def get_user_profiles(user_id):
+class SettingList(peewee.Model):
+    title = peewee.CharField(default='Не указано')
+
+    class Meta:
+        database = db
+
+    def create_setting(self, title):
+        try:
+            new_setting = self.create(title=title)
+            return new_setting
+        except self.DoesNotExist:
+            return False
+
+    def get_setting_list(self):
+        try:
+            settings = self.select()
+            return settings
+        except self.DoesNotExist:
+            return []
+
+    def delete_setting(self, setting_id):
+        try:
+            deleted_setting = self.delete().where(SettingList.id == setting_id)
+            deleted_setting.execute()
+            return True
+        except RpProfile.DoesNotExist:
+            return False
+
+
+class ProfileSettingList(peewee.Model):
+    profile_id = peewee.IntegerField()
+    setting_id = peewee.IntegerField()
+
+    class Meta:
+        database = db
+        primary_key = peewee.CompositeKey('profile_id', 'setting_id')
+
+    def add_setting(self, profile_id, setting_id):
+        try:
+            added_setting = self.create(profile_id=profile_id,
+                                        setting_id=setting_id)
+            return added_setting
+        except:
+            return False
+
+    def get_setting_list(self, profile_id):
+        try:
+            setting_list = self.select(ProfileSettingList, SettingList)\
+                               .where(ProfileSettingList.profile_id == profile_id)\
+                               .join(SettingList, on=(ProfileSettingList.setting_id == SettingList.id).alias('setting'))
+            return setting_list
+        except self.DoesNotExist:
+            return []
+
+    def delete_setting_from_list(self, profile_id, setting_id):
+        try:
+            delete_setting = self.delete().where((ProfileSettingList.profile_id == profile_id) &
+                                                 (ProfileSettingList.setting_id == setting_id))
+            delete_setting.execute()
+            return True
+        except self.DoesNotExist:
+            return False
+
+
+def get_user_profiles(owner_id):
     try:
-        profiles_ids = ProfileOwner.select().where(ProfileOwner.owner_id == user_id)
-        profiles = [RpProfile.get(RpProfile.id == pr.profile_id) for pr in profiles_ids]
+        profiles = ProfileOwner.select(ProfileOwner, RpProfile) \
+                               .where(ProfileOwner.owner_id == owner_id) \
+                               .join(RpProfile, on=(ProfileOwner.profile_id == RpProfile.id).alias('profile'))
         return profiles
     except ProfileOwner.DoesNotExist:
         return []
@@ -133,10 +198,10 @@ def delete_rp_profile(profile_id):
 
 def count_similarity_score(user_profile, player_profile):
     score = 0
-    user_setting = set(json.loads(user_profile.setting_list))
-    player_setting = set(json.loads(player_profile.setting_list))
+    user_setting = ProfileSettingList().get_setting_list(user_profile.id)
+    player_setting = ProfileSettingList().get_setting_list(player_profile.id)
 
-    score += len(user_setting & player_setting)
+    score += len((i.setting_id for i in user_setting) & (i.setting_id for i in player_setting))
     return score
 
 

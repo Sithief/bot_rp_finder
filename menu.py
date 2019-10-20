@@ -3,7 +3,6 @@ import user_class
 import json
 
 genders = ['Мужской', 'Женский', 'Не указано']
-setting = ['Повседневность', 'Средневековье', 'Фентези', 'Научная фантастика']
 
 
 def menu_hub(user_message):
@@ -56,9 +55,9 @@ def user_profiles(user_message):
     message = 'Список ваших анкет:'
     pr_buttons = list()
     for num, pr in enumerate(profiles):
-        pr_buttons.append([vk_api.new_button(pr.name,
+        pr_buttons.append([vk_api.new_button(pr.profile.name,
                                              {'menu_id': 'change_profile',
-                                              'arguments': {'profile_id': pr.id}})])
+                                              'arguments': {'profile_id': pr.profile.id}})])
 
     button_main = vk_api.new_button('Главное меню', {'menu_id': 'main', 'arguments': None}, 'primary')
     if len(profiles) < 4:
@@ -78,7 +77,8 @@ def rp_profile_display(profile_id):
     profile['message'] += f'Имя: {rp_profile.name}\n'
     if rp_profile.gender != 'Не указано':
         profile['message'] += f'Пол: {rp_profile.gender}\n'
-    user_setting_list = json.loads(rp_profile.setting_list)
+    user_setting_list = user_class.ProfileSettingList().get_setting_list(profile_id)
+    user_setting_list = [i.setting.title for i in user_setting_list]
     if user_setting_list:
         profile['message'] += f'Сеттинг: {", ".join(user_setting_list)}\n'
     profile['message'] += f'Описание: {rp_profile.description}\n'
@@ -204,32 +204,32 @@ def change_gender(user_message):
 
 def change_setting_list(user_message):
     user_info = user_class.get_user(user_message['from_id'])
-    profile = user_class.get_rp_profile(user_info.item_id)
-
-    user_setting = [i for i in json.loads(profile.setting_list) if i in setting]
-    profile.setting_list = json.dumps(user_setting, ensure_ascii=False)
+    profile_id = user_info.item_id
+    setting = user_class.SettingList().get_setting_list()
+    user_setting = user_class.ProfileSettingList().get_setting_list(profile_id)
 
     if user_message['payload']['arguments']:
-        if user_message['payload']['arguments'] in user_setting:
-            user_setting.remove(user_message['payload']['arguments'])
-            profile.setting_list = json.dumps(user_setting, ensure_ascii=False)
+        if user_message['payload']['arguments']['setting_id'] in [i.setting_id for i in user_setting]:
+            user_class.ProfileSettingList().delete_setting_from_list(user_message['payload']['arguments']['profile_id'],
+                                                                     user_message['payload']['arguments']['setting_id'])
 
         else:
-            user_setting.append(user_message['payload']['arguments'])
-            profile.setting_list = json.dumps(user_setting, ensure_ascii=False)
-
-    profile.save()
-
+            user_class.ProfileSettingList().add_setting(user_message['payload']['arguments']['profile_id'],
+                                                        user_message['payload']['arguments']['setting_id'])
+        user_setting = user_class.ProfileSettingList().get_setting_list(profile_id)
     message = 'Выберите подходящие сеттинги для игры:\n' \
               '• Первое нажатие добавляет в список\n' \
               '• Второе - убирает из списка'
 
     setting_btn = list()
+    user_setting_ids = [i.setting_id for i in user_setting]
     for stt in setting:
         color = 'default'
-        if stt in user_setting:
+        if stt.id in user_setting_ids:
             color = 'positive'
-        setting_btn.append(vk_api.new_button(stt, {'menu_id': 'change_setting_list', 'arguments': stt}, color))
+        setting_btn.append(vk_api.new_button(stt.title, {'menu_id': 'change_setting_list',
+                                                         'arguments': {'setting_id': stt.id,
+                                                                       'profile_id': profile_id}}, color))
 
     button_return = vk_api.new_button('Вернуться к анкете',
                                       {'menu_id': 'change_profile', 'arguments': None}, 'primary')
@@ -332,9 +332,9 @@ def choose_profile_to_search(user_message):
     message = 'Выберите из списка ваших анкет ту, для которой нужно найти соигроков'
     pr_buttons = list()
     for num, pr in enumerate(profiles):
-        pr_buttons.append([vk_api.new_button(pr.name,
+        pr_buttons.append([vk_api.new_button(pr.profile.name,
                                              {'menu_id': 'search_by_profile',
-                                              'arguments': {'profile_id': pr.id}})])
+                                              'arguments': {'profile_id': pr.profile.id}})])
 
     button_main = vk_api.new_button('Главное меню', {'menu_id': 'main', 'arguments': None}, 'primary')
     return {'message': message, 'keyboard': pr_buttons + [[button_main]]}
