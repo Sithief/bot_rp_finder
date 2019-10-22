@@ -7,6 +7,7 @@ genders = ['Мужской', 'Женский', 'Не указано']
 
 def menu_hub(user_message):
     menus = {'main': main,
+             'confirm_action': confirm_action,
              'user_profiles': user_profiles,
              'create_profile': create_profile, 'delete_profile': delete_profile,
              'change_profile': change_profile,
@@ -109,6 +110,19 @@ def delete_profile(user_message):
     return {'message': message, 'keyboard': [[button_return]]}
 
 
+def confirm_action(user_message):
+    button_main = vk_api.new_button('Главное меню', {'menu_id': 'main', 'arguments': None}, 'primary')
+    message = 'Вы действительно хотите сделать это?'
+    try:
+        confirm_btn = vk_api.new_button('Да',
+                                        {'menu_id': user_message['payload']['arguments']['menu_id'],
+                                         'arguments': user_message['payload']['arguments']['arguments']},
+                                        'positive')
+        return {'message': message, 'keyboard': [[confirm_btn], [button_main]]}
+    except:
+        return {'message': message, 'keyboard': [[button_main]]}
+
+
 def change_profile(user_message):
     user_info = user_class.get_user(user_message['from_id'])
 
@@ -132,7 +146,10 @@ def change_profile(user_message):
     buttons_change_images = vk_api.new_button('Изменить изображения',
                                               {'menu_id': 'change_images', 'arguments': None})
     buttons_delete = vk_api.new_button('Удалить анкету',
-                                       {'menu_id': 'delete_profile', 'arguments': None}, 'negative')
+                                       {'menu_id': 'confirm_action',
+                                        'arguments': {'menu_id': 'delete_profile',
+                                                      'arguments': {'profile_id': user_info.item_id}}},
+                                       'negative')
     return {'message': message['message'],
             'attachment': message['attachment'],
             'keyboard': [[buttons_change_name, buttons_change_description],

@@ -1,9 +1,9 @@
 import peewee
 import json
+from Keys import Keys
 
-# default_need_input = '{"input_type": null, "input_field": null, "next_func": null}'
-# db = peewee.SqliteDatabase('people.db')
-db = peewee.SqliteDatabase('people.db', pragmas={'journal_mode': 'wal',
+db_filename = Keys().get_db_filename()
+db = peewee.SqliteDatabase(db_filename, pragmas={'journal_mode': 'wal',
                                                  'cache_size': -1 * 64000,  # 64MB
                                                  'foreign_keys': 1,
                                                  'ignore_check_constraints': 0,
