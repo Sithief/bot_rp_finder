@@ -582,5 +582,5 @@ def admin_delete_setting(user_message):
     except:
         message = f'Во время удаления сеттинга произошла ошибка, попробуйте повторить запрос через некоторое время.'
     button_return = vk_api.new_button('Вернуться к списку сеттингов',
-                                      {'menu_id': 'admin_setting_list', 'arguments': None}, 'negative')
+                                      {'menu_id': 'admin_setting_list', 'arguments': None}, 'primary')
     return {'message': message, 'keyboard': [[button_return]]}

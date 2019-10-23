@@ -119,6 +119,8 @@ class SettingList(peewee.Model):
 
     def delete_setting(self, setting_id):
         try:
+            delete_relations = ProfileSettingList().delete().where(ProfileSettingList.setting_id == setting_id)
+            delete_relations.execute()
             deleted_setting = self.delete().where(SettingList.id == setting_id)
             deleted_setting.execute()
             return True
