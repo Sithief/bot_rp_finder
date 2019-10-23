@@ -21,7 +21,13 @@ def menu_hub(user_message):
              'search_by_profile': search_by_profile,
              'show_player_profile': show_player_profile,
              'notifications': notifications,
-             'user_account': user_account}
+             'user_account': user_account,
+             'admin_setting_list': admin_setting_list,
+             'admin_create_setting': admin_create_setting,
+             'admin_setting_info': admin_setting_info,
+             'admin_change_setting_title': admin_change_setting_title,
+             'admin_save_setting_title': admin_save_setting_title,
+             'admin_delete_setting': admin_delete_setting}
     if 'payload' in user_message:
         if 'menu_id' in user_message['payload'] and user_message['payload']['menu_id'] in menus:
             return menus[user_message['payload']['menu_id']](user_message)
@@ -30,6 +36,27 @@ def menu_hub(user_message):
     else:
         user_info = user_class.get_user(user_message['from_id'])
         return menus[user_info.menu_id](user_message)
+
+# системные меню
+
+
+def confirm_action(user_message):
+    button_main = vk_api.new_button('Главное меню', {'menu_id': 'main', 'arguments': None}, 'primary')
+    message = 'Вы действительно хотите сделать это?'
+    try:
+        confirm_btn = vk_api.new_button('Да',
+                                        {'menu_id': user_message['payload']['arguments']['menu_id'],
+                                         'arguments': user_message['payload']['arguments']['arguments']},
+                                        'positive')
+        return {'message': message, 'keyboard': [[confirm_btn], [button_main]]}
+    except:
+        return {'message': message, 'keyboard': [[button_main]]}
+
+
+def access_error(user_message):
+    message = 'Ошибка доступа'
+    button_return = vk_api.new_button('Вернуться в главное меню', {'menu_id': 'main', 'arguments': None}, 'primary')
+    return {'message': message, 'keyboard': [[button_return]]}
 
 
 def main(user_message):
@@ -43,10 +70,15 @@ def main(user_message):
     message = 'Главное меню'
     button_profiles = vk_api.new_button('Мои анкеты', {'menu_id': 'user_profiles'})
     button_search = vk_api.new_button('Найти соигроков', {'menu_id': 'profiles_search'}, 'positive')
+    button_admin_setting = []
+    if user_info.is_admin:
+        button_admin_setting = [vk_api.new_button('Настройки списка сеттингов', {'menu_id': 'admin_setting_list'})]
+
     # button_notifications = vk_api.new_button('Мои Уведомления', {'menu_id': 'notifications'})
     # button_user_account = vk_api.new_button('Настройки аккаунта', {'menu_id': 'user_account'})
     return {'message': message, 'keyboard': [[button_profiles],
-                                             [button_search]]}
+                                             [button_search],
+                                             button_admin_setting]}
 
 # создание и изменение анкет
 
@@ -108,19 +140,6 @@ def delete_profile(user_message):
     button_return = vk_api.new_button('Вернуться к списку анкет',
                                       {'menu_id': 'user_profiles', 'arguments': None})
     return {'message': message, 'keyboard': [[button_return]]}
-
-
-def confirm_action(user_message):
-    button_main = vk_api.new_button('Главное меню', {'menu_id': 'main', 'arguments': None}, 'primary')
-    message = 'Вы действительно хотите сделать это?'
-    try:
-        confirm_btn = vk_api.new_button('Да',
-                                        {'menu_id': user_message['payload']['arguments']['menu_id'],
-                                         'arguments': user_message['payload']['arguments']['arguments']},
-                                        'positive')
-        return {'message': message, 'keyboard': [[confirm_btn], [button_main]]}
-    except:
-        return {'message': message, 'keyboard': [[button_main]]}
 
 
 def change_profile(user_message):
@@ -185,11 +204,10 @@ def save_name(user_message):
         return {'message': message, 'keyboard': [[button_return, button_try_again]]}
 
     if not all([i in symbols for i in user_message['text'].lower()]):
-        error_symbols = ['"'+ i +'"' for i in user_message['text'].lower() if not i in symbols]
+        error_symbols = ['"' + i.replace('\\', '\\\\') + '"' for i in user_message['text'].lower() if i not in symbols]
         message = f"Имя содержит недопустимые символы: {' '.join(error_symbols)}"
         return {'message': message, 'keyboard': [[button_return, button_try_again]]}
 
-    # TODO добавить проверки ввода
     user_info = user_class.get_user(user_message['from_id'])
     rp_profile = user_class.get_rp_profile(user_info.item_id)
     rp_profile.name = user_message['text']
@@ -439,8 +457,10 @@ def notifications(user_message):
     button_main = vk_api.new_button('Главное меню', {'menu_id': 'main', 'arguments': None}, 'primary')
     return {'message': message, 'keyboard': [[button_main]]}
 
+
 def role_offers(user_message):
     pass
+
 
 def user_account(user_message):
     message = 'Настройки аккаунта'
@@ -455,3 +475,112 @@ def empty_func(user_message):
     user_info.save()
     button_1 = vk_api.new_button('Главное меню', {'menu_id': 'main', 'arguments': None}, 'primary')
     return {'message': message, 'keyboard': [[button_1]]}
+
+
+# Меню администратора
+
+
+def admin_setting_list(user_message):
+    user_info = user_class.get_user(user_message['from_id'])
+
+    if not user_info.is_admin:
+        return access_error(user_message)
+
+    message = 'Список доступных сеттингов.\n' \
+              'Выберите тот, который хотите изменить или удалить.'
+    setting = user_class.SettingList().get_setting_list()
+
+    setting_btn = list()
+    for stt in setting:
+        setting_btn.append(vk_api.new_button(stt.title, {'menu_id': 'admin_setting_info',
+                                                         'arguments': {'setting_id': stt.id}}, 'default'))
+
+    button_create = vk_api.new_button('Добавить новый сеттинг', {'menu_id': 'admin_create_setting',
+                                                                 'arguments': None}, 'positive')
+    button_return = vk_api.new_button('Вернуться в главное меню', {'menu_id': 'main', 'arguments': None}, 'primary')
+    return {'message': message, 'keyboard': [setting_btn, [button_create], [button_return]]}
+
+
+def admin_create_setting(user_message):
+    new_setting = user_class.SettingList().create_setting()
+    if not new_setting:
+        return access_error(user_message)
+    user_info = user_class.get_user(user_message['from_id'])
+    user_info.item_id = new_setting.id
+    user_info.save()
+    return admin_setting_info(user_message)
+
+
+def admin_setting_info(user_message):
+    user_info = user_class.get_user(user_message['from_id'])
+
+    try:
+        user_info.item_id = user_message['payload']['arguments']['setting_id']
+    except:
+        print('что-то пошло не так')
+
+    user_info.menu_id = 'admin_setting_info'
+    user_info.save()
+    setting = user_class.SettingList().get_setting(user_info.item_id)
+    message = f'Название сеттинга: {setting.title}'
+    btn_change = vk_api.new_button('Изменить название сеттинга', {'menu_id': 'admin_change_setting_title', 'arguments': None})
+    btn_del = vk_api.new_button('Удалить сеттинг',
+                                {'menu_id': 'confirm_action',
+                                 'arguments': {'menu_id': 'admin_delete_setting',
+                                               'arguments': {'setting_id': user_info.item_id}}},
+                                'negative')
+    button_return = vk_api.new_button('Вернуться к списку сеттингов',
+                                      {'menu_id': 'admin_setting_list', 'arguments': None}, 'primary')
+    return {'message': message, 'keyboard': [[btn_change], [btn_del], [button_return]]}
+
+
+def admin_change_setting_title(user_message):
+    user_info = user_class.get_user(user_message['from_id'])
+    user_info.menu_id = 'admin_save_setting_title'
+    user_info.save()
+    message = 'Введите название сеттинга'
+    button_return = vk_api.new_button('Вернуться к списку сеттингов',
+                                      {'menu_id': 'admin_setting_list', 'arguments': None}, 'negative')
+    return {'message': message, 'keyboard': [[button_return]]}
+
+
+def admin_save_setting_title(user_message):
+    name_len = 25
+    symbols = 'abcdefghijklmnopqrstuvwxyz' + 'абвгдеёжзийклмнопрстуфхцчшщьыъэюя' + '1234567890_-,. '
+    button_return = vk_api.new_button('Вернуться к списку сеттингов',
+                                      {'menu_id': 'admin_setting_list', 'arguments': None}, 'negative')
+    button_try_again = vk_api.new_button('Ввести название снова',
+                                         {'menu_id': 'admin_change_setting_title', 'arguments': None}, 'positive')
+    if len(user_message['text']) > 25:
+        message = f'Длина названия превосходит {name_len} символов.\n Придумайте более короткий вариант.'
+        return {'message': message, 'keyboard': [[button_return, button_try_again]]}
+
+    if len(user_message['text']) == 0:
+        message = f'Это не слишком похоже на название сеттинга, вам так не кажется?'
+        return {'message': message, 'keyboard': [[button_return, button_try_again]]}
+
+    if not all([i in symbols for i in user_message['text'].lower()]):
+        error_symbols = ['"' + i.replace('\\', '\\\\') + '"' for i in user_message['text'].lower() if i not in symbols]
+        message = f"Название содержит недопустимые символы: {' '.join(error_symbols)}"
+        return {'message': message, 'keyboard': [[button_return, button_try_again]]}
+
+    user_info = user_class.get_user(user_message['from_id'])
+    setting = user_class.SettingList().get_setting(user_info.item_id)
+    setting.title = user_message['text']
+    setting.save()
+    return admin_setting_info(user_message)
+
+
+def admin_delete_setting(user_message):
+    user_info = user_class.get_user(user_message['from_id'])
+    try:
+        setting = user_class.SettingList().get_setting(user_info.item_id).title
+        if user_class.SettingList().delete_setting(user_info.item_id):
+            message = f'Сеттинг "{setting}" успешно удален.'
+        else:
+            message = f'Во время удаления сеттинга произошла ошибка, попробуйте повторить запрос через некоторое время.'
+    except:
+        message = f'Во время удаления сеттинга произошла ошибка, попробуйте повторить запрос через некоторое время.'
+    button_return = vk_api.new_button('Вернуться к списку сеттингов',
+                                      {'menu_id': 'admin_setting_list', 'arguments': None}, 'negative')
+    return {'message': message, 'keyboard': [[button_return]]}

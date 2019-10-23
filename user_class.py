@@ -1,4 +1,5 @@
 import peewee
+import playhouse
 import json
 from Keys import Keys
 
@@ -19,6 +20,7 @@ class User(peewee.Model):
     item_id = peewee.IntegerField(default=-1)
     tmp_item_id = peewee.IntegerField(default=-1)
     list_iter = peewee.IntegerField(default=0)
+    is_admin = peewee.IntegerField(default=0)
 
     class Meta:
         database = db
@@ -94,12 +96,19 @@ class SettingList(peewee.Model):
     class Meta:
         database = db
 
-    def create_setting(self, title):
+    def create_setting(self):
         try:
-            new_setting = self.create(title=title)
+            new_setting = self.create()
             return new_setting
-        except self.DoesNotExist:
+        except:
             return False
+
+    def get_setting(self, setting_id):
+        try:
+            settings = self.get(SettingList.id == setting_id)
+            return settings
+        except self.DoesNotExist:
+            return []
 
     def get_setting_list(self):
         try:

@@ -347,12 +347,12 @@ def new_button(label, button, color='default'):
 def keyboard_from_buttons(buttons):
     keyboard = {'one_time': False, 'buttons': []}
     for buttons_row in buttons:
-        if len(buttons_row) <= 4:
-            keyboard['buttons'].append(buttons_row)
-        else:
+        if len(buttons_row) > 4:
             while len(buttons_row):
                 keyboard['buttons'].append(buttons_row[:4])
                 buttons_row = buttons_row[4:]
+        elif len(buttons_row) > 0:
+            keyboard['buttons'].append(buttons_row)
     return json.dumps(keyboard, ensure_ascii=False)
 
 
