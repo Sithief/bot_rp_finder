@@ -88,9 +88,9 @@ def user_profiles(user_message):
     message = 'Список ваших анкет:'
     pr_buttons = list()
     for num, pr in enumerate(profiles):
-        pr_buttons.append([vk_api.new_button(pr.profile.name,
+        pr_buttons.append([vk_api.new_button(pr.name,
                                              {'menu_id': 'change_profile',
-                                              'arguments': {'profile_id': pr.profile.id}})])
+                                              'arguments': {'profile_id': pr.id}})])
 
     button_main = vk_api.new_button('Главное меню', {'menu_id': 'main', 'arguments': None}, 'primary')
     if len(profiles) < 4:
@@ -367,9 +367,9 @@ def choose_profile_to_search(user_message):
     message = 'Выберите из списка ваших анкет ту, для которой нужно найти соигроков'
     pr_buttons = list()
     for num, pr in enumerate(profiles):
-        pr_buttons.append([vk_api.new_button(pr.profile.name,
+        pr_buttons.append([vk_api.new_button(pr.name,
                                              {'menu_id': 'search_by_profile',
-                                              'arguments': {'profile_id': pr.profile.id}})])
+                                              'arguments': {'profile_id': pr.id}})])
 
     button_main = vk_api.new_button('Главное меню', {'menu_id': 'main', 'arguments': None}, 'primary')
     return {'message': message, 'keyboard': pr_buttons + [[button_main]]}
@@ -389,7 +389,7 @@ def search_by_profile(user_message):
 
     suitable_profiles = user_class.find_suitable_profiles(user_info.item_id)
     sent_profiles = [pr.to_profile_id for pr in user_class.RoleOffer().get_offers_from_user(user_info.id)]
-    confirmed_profiles = [pr.from_profile_id for pr in user_class.RoleOffer().get_offers_to_user(user_info.id)]
+    confirmed_users = [pr.from_owner_id for pr in user_class.RoleOffer().get_offers_to_user(user_info.id)]
     message = 'Список анкет подходящих к вашей.\n' \
               'Синим отправленные предложения.\n' \
               'Зелёным - взаимные предложения.'
@@ -398,7 +398,7 @@ def search_by_profile(user_message):
         color = 'default'
         if pr.id in sent_profiles:
             color = 'primary'
-            if pr.id in confirmed_profiles:
+            if pr.owner_id in confirmed_users:
                 color = 'positive'
         pr_buttons.append([vk_api.new_button(pr.name,
                                              {'menu_id': 'show_player_profile',
@@ -429,18 +429,17 @@ def show_player_profile(user_message):
 
     try:
         if user_message['payload']['arguments']['offer']:
-            user_class.RoleOffer().create_offer(user_info.item_id, user_info.tmp_item_id)
+            user_class.RoleOffer().create_offer(user_info.id, user_info.tmp_item_id)
         else:
-            user_class.RoleOffer().delete_offer(user_info.item_id, user_info.tmp_item_id)
+            user_class.RoleOffer().delete_offer(user_info.id, user_info.tmp_item_id)
     except Exception as e:
-        print(e)
+        print('show_player_profile', e)
         pass
 
     message = rp_profile_display(user_info.tmp_item_id)
-    sent_profiles = [pr.to_profile_id for pr in user_class.RoleOffer().get_offers_from_user(user_info.id)]
-    if user_info.tmp_item_id in sent_profiles:
+    if user_class.RoleOffer().is_offer_to_profile(user_info.id, user_info.tmp_item_id):
         button_offer = vk_api.new_button('Отменить предложение', {'menu_id': 'show_player_profile',
-                                                                'arguments': {'offer': False}}, 'negative')
+                                                                  'arguments': {'offer': False}}, 'negative')
     else:
         button_offer = vk_api.new_button('Предложить ролевую', {'menu_id': 'show_player_profile',
                                                                 'arguments': {'offer': True}}, 'positive')

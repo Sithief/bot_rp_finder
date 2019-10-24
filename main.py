@@ -14,7 +14,6 @@ if __name__ == '__main__':
 
     user_class.User.create_table()
     user_class.RpProfile.create_table()
-    user_class.ProfileOwner.create_table()
     user_class.RoleOffer.create_table()
     user_class.SettingList.create_table()
     user_class.ProfileSettingList.create_table()
