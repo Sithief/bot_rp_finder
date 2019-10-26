@@ -76,12 +76,16 @@ def main(user_message):
 
     message = 'Главное меню'
     button_profiles = vk_api.new_button('Мои анкеты', {'m_id': 'user_profiles'})
-    button_search = vk_api.new_button('Найти соигроков', {'m_id': 'profiles_search'}, 'positive')
+    button_search = vk_api.new_button('Найти соигроков', {'m_id': 'profiles_search'})
     button_admin_setting = []
     if user_info.is_admin:
         button_admin_setting = [vk_api.new_button('Настройки списка сеттингов', {'m_id': 'admin_setting_list'})]
 
-    button_notifications = vk_api.new_button('Мои Уведомления', {'m_id': 'notifications'})
+    notifications_list = user_class.get_user_notifications(user_message['from_id'])
+    notification_count = len([i for i in notifications_list if not i.is_read])
+    notifications_label = 'Мои Уведомления' + (f' ({notification_count})' if notification_count else '')
+    notifications_color = 'positive' if notification_count else 'default'
+    button_notifications = vk_api.new_button(notifications_label, {'m_id': 'notifications'}, notifications_color)
     # button_user_account = vk_api.new_button('Настройки аккаунта', {'m_id': 'user_account'})
     return {'message': message, 'keyboard': [[button_profiles],
                                              [button_search],
@@ -437,6 +441,12 @@ def show_player_profile(user_message):
         user_info.tmp_item_id = user_message['payload']['args']['profile_id']
         user_info.save()
 
+    if 'btn_back' in user_message['payload']['args']:
+        btn_back = user_message['payload']['args']['btn_back']
+    else:
+        btn_back = {'label': 'В главное меню', 'm_id': 'main', 'args': None}
+
+
     try:
         if 'offer' in user_message['payload']['args']:
             if user_message['payload']['args']['offer']:
@@ -467,17 +477,17 @@ def show_player_profile(user_message):
 
     message = rp_profile_display(user_info.tmp_item_id)
     if user_class.RoleOffer().is_offer_to_profile(user_info.id, user_info.tmp_item_id):
-        button_offer = vk_api.new_button('Отменить предложение', {'m_id': 'show_player_profile',
-                                                                  'args': {'offer': False}}, 'negative')
+        button_offer = vk_api.new_button('Отменить предложение',
+                                         {'m_id': 'show_player_profile',
+                                          'args': {'offer': False, 'btn_back': btn_back}},
+                                         'negative')
     else:
-        button_offer = vk_api.new_button('Предложить ролевую', {'m_id': 'show_player_profile',
-                                                                'args': {'offer': True}}, 'positive')
+        button_offer = vk_api.new_button('Предложить ролевую',
+                                         {'m_id': 'show_player_profile',
+                                          'args': {'offer': True, 'btn_back': btn_back}},
+                                         'positive')
 
-    if 'btn_back' in user_message['payload']['args']:
-        btn_back = user_message['payload']['args']['btn_back']
-        button_back = vk_api.new_button(btn_back['label'], {'m_id': btn_back['m_id'], 'args': btn_back['args']})
-    else:
-        button_back = vk_api.new_button('В главное меню', {'m_id': 'main', 'args': None}, 'primary')
+    button_back = vk_api.new_button(btn_back['label'], {'m_id': btn_back['m_id'], 'args': btn_back['args']})
     message.update({'keyboard': [[button_offer], [button_back]]})
     return message
 
@@ -490,9 +500,12 @@ def notifications(user_message):
     message = 'Список уведомлений'
     nt_buttons = list()
     for num, nt in enumerate(notifications_list):
+        color = 'positive'
+        if nt.is_read:
+            color = 'default'
         nt_buttons.append([vk_api.new_button(nt.title,
                                              {'m_id': 'notification_display',
-                                              'args': {'nt_id': nt.id}})])
+                                              'args': {'nt_id': nt.id}}, color)])
 
     button_main = vk_api.new_button('Главное меню', {'m_id': 'main', 'args': None}, 'primary')
     return {'message': message, 'keyboard': nt_buttons + [[button_main]]}
@@ -510,7 +523,10 @@ def notification_display(user_message):
 
     nt_info.is_read = True
     nt_info.save()
+    time_form = '%d.%m.%y %H:%M' if time.time() - nt_info.create_time > 24*60*60 else '%H:%M:%S'
     notification = dict({'message': ''})
+    notification['message'] += f'Уведомление получено в: ' \
+                               f'{time.strftime(time_form, time.gmtime(nt_info.create_time + 3*60*60))} (по Мск)\n'
     notification['message'] += f'Название: {nt_info.title}\n'
     notification['message'] += f'Сообщение: {nt_info.description}\n'
     notification['attachment'] = ','.join(json.loads(nt_info.attachment))
