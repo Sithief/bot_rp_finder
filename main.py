@@ -17,6 +17,7 @@ if __name__ == '__main__':
     user_class.RoleOffer.create_table()
     user_class.SettingList.create_table()
     user_class.ProfileSettingList.create_table()
+    user_class.Notification.create_table()
 
     longpoll_stdout = multiprocessing.Queue()
     longpoll_listner = multiprocessing.Process(target=longpoll.listen, args=(longpoll_stdout,))

@@ -218,13 +218,21 @@ class Notification(peewee.Model):
 
 
 def create_notification(owner_id, title):
-    new_notification = User.create(owner_id=owner_id, title=title)
+    new_notification = Notification.create(owner_id=owner_id, title=title)
     return new_notification
 
 
-def get_user_notification(owner_id):
+def get_user_notifications(owner_id):
     try:
         notifications = Notification.select().where(Notification.owner_id == owner_id)
+        return notifications
+    except Notification.DoesNotExist:
+        return []
+
+
+def get_notification(notofocation_id):
+    try:
+        notifications = Notification.get(Notification.id == notofocation_id)
         return notifications
     except Notification.DoesNotExist:
         return []

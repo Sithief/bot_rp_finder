@@ -1,6 +1,8 @@
+import json
+import time
 import vk_api
 import user_class
-import json
+import text_extension as t_ext
 
 genders = ['Мужской', 'Женский', 'Не указано']
 
@@ -8,6 +10,7 @@ genders = ['Мужской', 'Женский', 'Не указано']
 def menu_hub(user_message):
     menus = {'main': main,
              'confirm_action': confirm_action,
+
              'user_profiles': user_profiles,
              'create_profile': create_profile, 'delete_profile': delete_profile,
              'change_profile': change_profile,
@@ -16,11 +19,15 @@ def menu_hub(user_message):
              'change_setting_list': change_setting_list,
              'change_description': change_description, 'save_description': save_description,
              'change_images': change_images, 'input_images': input_images, 'save_images': save_images,
+
              'profiles_search': profiles_search,
              'choose_profile_to_search': choose_profile_to_search,
              'search_by_profile': search_by_profile,
              'show_player_profile': show_player_profile,
+
              'notifications': notifications,
+             'notification_display': notification_display,
+
              'user_account': user_account,
              'admin_setting_list': admin_setting_list,
              'admin_create_setting': admin_create_setting,
@@ -29,8 +36,8 @@ def menu_hub(user_message):
              'admin_save_setting_title': admin_save_setting_title,
              'admin_delete_setting': admin_delete_setting}
     if 'payload' in user_message:
-        if 'menu_id' in user_message['payload'] and user_message['payload']['menu_id'] in menus:
-            return menus[user_message['payload']['menu_id']](user_message)
+        if 'm_id' in user_message['payload'] and user_message['payload']['m_id'] in menus:
+            return menus[user_message['payload']['m_id']](user_message)
         else:
             return empty_func(user_message)
     else:
@@ -41,21 +48,21 @@ def menu_hub(user_message):
 
 
 def confirm_action(user_message):
-    button_main = vk_api.new_button('Главное меню', {'menu_id': 'main', 'arguments': None}, 'primary')
+    button_main = vk_api.new_button('Главное меню', {'m_id': 'main', 'args': None}, 'primary')
     message = 'Вы действительно хотите сделать это?'
     try:
         confirm_btn = vk_api.new_button('Да',
-                                        {'menu_id': user_message['payload']['arguments']['menu_id'],
-                                         'arguments': user_message['payload']['arguments']['arguments']},
+                                        {'m_id': user_message['payload']['args']['m_id'],
+                                         'args': user_message['payload']['args']['args']},
                                         'positive')
         return {'message': message, 'keyboard': [[confirm_btn], [button_main]]}
     except:
         return {'message': message, 'keyboard': [[button_main]]}
 
 
-def access_error(user_message):
+def access_error():
     message = 'Ошибка доступа'
-    button_return = vk_api.new_button('Вернуться в главное меню', {'menu_id': 'main', 'arguments': None}, 'primary')
+    button_return = vk_api.new_button('Вернуться в главное меню', {'m_id': 'main', 'args': None}, 'primary')
     return {'message': message, 'keyboard': [[button_return]]}
 
 
@@ -68,16 +75,17 @@ def main(user_message):
     user_info.save()
 
     message = 'Главное меню'
-    button_profiles = vk_api.new_button('Мои анкеты', {'menu_id': 'user_profiles'})
-    button_search = vk_api.new_button('Найти соигроков', {'menu_id': 'profiles_search'}, 'positive')
+    button_profiles = vk_api.new_button('Мои анкеты', {'m_id': 'user_profiles'})
+    button_search = vk_api.new_button('Найти соигроков', {'m_id': 'profiles_search'}, 'positive')
     button_admin_setting = []
     if user_info.is_admin:
-        button_admin_setting = [vk_api.new_button('Настройки списка сеттингов', {'menu_id': 'admin_setting_list'})]
+        button_admin_setting = [vk_api.new_button('Настройки списка сеттингов', {'m_id': 'admin_setting_list'})]
 
-    # button_notifications = vk_api.new_button('Мои Уведомления', {'menu_id': 'notifications'})
-    # button_user_account = vk_api.new_button('Настройки аккаунта', {'menu_id': 'user_account'})
+    button_notifications = vk_api.new_button('Мои Уведомления', {'m_id': 'notifications'})
+    # button_user_account = vk_api.new_button('Настройки аккаунта', {'m_id': 'user_account'})
     return {'message': message, 'keyboard': [[button_profiles],
                                              [button_search],
+                                             [button_notifications],
                                              button_admin_setting]}
 
 # создание и изменение анкет
@@ -89,23 +97,23 @@ def user_profiles(user_message):
     pr_buttons = list()
     for num, pr in enumerate(profiles):
         pr_buttons.append([vk_api.new_button(pr.name,
-                                             {'menu_id': 'change_profile',
-                                              'arguments': {'profile_id': pr.id}})])
+                                             {'m_id': 'change_profile',
+                                              'args': {'profile_id': pr.id}})])
 
-    button_main = vk_api.new_button('Главное меню', {'menu_id': 'main', 'arguments': None}, 'primary')
+    button_main = vk_api.new_button('Главное меню', {'m_id': 'main', 'args': None}, 'primary')
     if len(profiles) < 4:
-        button_create_rp = vk_api.new_button('создать новую анкету', {'menu_id': 'create_profile',
-                                                                      'arguments': None}, 'primary')
+        button_create_rp = vk_api.new_button('создать новую анкету', {'m_id': 'create_profile',
+                                                                      'args': None}, 'primary')
     else:
-        button_create_rp = vk_api.new_button('создать новую анкету', {'menu_id': 'user_profiles',
-                                                                      'arguments': None}, 'default')
+        button_create_rp = vk_api.new_button('создать новую анкету', {'m_id': 'user_profiles',
+                                                                      'args': None}, 'default')
     return {'message': message, 'keyboard': pr_buttons + [[button_create_rp], [button_main]]}
 
 
 def rp_profile_display(profile_id):
     rp_profile = user_class.get_rp_profile(profile_id)
     if not rp_profile:
-        return {'message': 'Такой анкеты не существует', 'attachment': ''}
+        return access_error()
     profile = dict({'message': '', 'attachment': ''})
     profile['message'] += f'Имя: {rp_profile.name}\n'
     if rp_profile.gender != 'Не указано':
@@ -138,7 +146,7 @@ def delete_profile(user_message):
     except:
         message = f'Во время удаления анкеты произошла ошибка, попробуйте повторить запрос через некоторое время.'
     button_return = vk_api.new_button('Вернуться к списку анкет',
-                                      {'menu_id': 'user_profiles', 'arguments': None})
+                                      {'m_id': 'user_profiles', 'args': None})
     return {'message': message, 'keyboard': [[button_return]]}
 
 
@@ -146,8 +154,8 @@ def change_profile(user_message):
     user_info = user_class.get_user(user_message['from_id'])
 
     try:
-        message = rp_profile_display(user_message['payload']['arguments']['profile_id'])
-        user_info.item_id = user_message['payload']['arguments']['profile_id']
+        message = rp_profile_display(user_message['payload']['args']['profile_id'])
+        user_info.item_id = user_message['payload']['args']['profile_id']
     except:
         message = rp_profile_display(user_info.item_id)
 
@@ -155,19 +163,19 @@ def change_profile(user_message):
     user_info.save()
 
     message['message'] = 'Ваша анкета:\n\n' + message['message']
-    button_main = vk_api.new_button('Главное меню', {'menu_id': 'main', 'arguments': None}, 'primary')
-    buttons_change_name = vk_api.new_button('Изменить имя', {'menu_id': 'change_name', 'arguments': None})
-    buttons_change_gender = vk_api.new_button('Изменить пол', {'menu_id': 'change_gender', 'arguments': None})
+    button_main = vk_api.new_button('Главное меню', {'m_id': 'main', 'args': None}, 'primary')
+    buttons_change_name = vk_api.new_button('Изменить имя', {'m_id': 'change_name', 'args': None})
+    buttons_change_gender = vk_api.new_button('Изменить пол', {'m_id': 'change_gender', 'args': None})
     buttons_change_setting = vk_api.new_button('Изменить сеттинг',
-                                               {'menu_id': 'change_setting_list', 'arguments': None})
+                                               {'m_id': 'change_setting_list', 'args': None})
     buttons_change_description = vk_api.new_button('Изменить описание',
-                                                   {'menu_id': 'change_description', 'arguments': None})
+                                                   {'m_id': 'change_description', 'args': None})
     buttons_change_images = vk_api.new_button('Изменить изображения',
-                                              {'menu_id': 'change_images', 'arguments': None})
+                                              {'m_id': 'change_images', 'args': None})
     buttons_delete = vk_api.new_button('Удалить анкету',
-                                       {'menu_id': 'confirm_action',
-                                        'arguments': {'menu_id': 'delete_profile',
-                                                      'arguments': {'profile_id': user_info.item_id}}},
+                                       {'m_id': 'confirm_action',
+                                        'args': {'m_id': 'delete_profile',
+                                                      'args': {'profile_id': user_info.item_id}}},
                                        'negative')
     return {'message': message['message'],
             'attachment': message['attachment'],
@@ -184,7 +192,7 @@ def change_name(user_message):
     user_info.save()
     message = 'Введите имя вашего персонажа'
     button_return = vk_api.new_button('Вернуться к анкете',
-                                      {'menu_id': 'change_profile', 'arguments': None}, 'negative')
+                                      {'m_id': 'change_profile', 'args': None}, 'negative')
     return {'message': message, 'keyboard': [[button_return]]}
 
 
@@ -192,9 +200,9 @@ def save_name(user_message):
     name_len = 25
     symbols = 'abcdefghijklmnopqrstuvwxyz' + 'абвгдеёжзийклмнопрстуфхцчшщьыъэюя' + '1234567890_-,. '
     button_return = vk_api.new_button('Вернуться к анкете',
-                                      {'menu_id': 'change_profile', 'arguments': None}, 'negative')
+                                      {'m_id': 'change_profile', 'args': None}, 'negative')
     button_try_again = vk_api.new_button('Ввести имя снова',
-                                         {'menu_id': 'change_name', 'arguments': None}, 'positive')
+                                         {'m_id': 'change_name', 'args': None}, 'positive')
     if len(user_message['text']) > 25:
         message = f'Длина имени превосходит {name_len} символов.\n Придумайте более короткий вариант.'
         return {'message': message, 'keyboard': [[button_return, button_try_again]]}
@@ -219,8 +227,8 @@ def change_gender(user_message):
     user_info = user_class.get_user(user_message['from_id'])
     profile = user_class.get_rp_profile(user_info.item_id)
 
-    if user_message['payload']['arguments']:
-        profile.gender = user_message['payload']['arguments']
+    if user_message['payload']['args']:
+        profile.gender = user_message['payload']['args']
         profile.save()
 
     message = 'Выберите пол вашего персонажа'
@@ -230,10 +238,10 @@ def change_gender(user_message):
         color = 'default'
         if profile.gender == gen:
             color = 'positive'
-        gen_btn.append(vk_api.new_button(gen, {'menu_id': 'change_gender', 'arguments': gen}, color))
+        gen_btn.append(vk_api.new_button(gen, {'m_id': 'change_gender', 'args': gen}, color))
 
     button_return = vk_api.new_button('Вернуться к анкете',
-                                      {'menu_id': 'change_profile', 'arguments': None}, 'primary')
+                                      {'m_id': 'change_profile', 'args': None}, 'primary')
     return {'message': message, 'keyboard': [gen_btn, [button_return]]}
 
 
@@ -243,14 +251,14 @@ def change_setting_list(user_message):
     setting = user_class.SettingList().get_setting_list()
     user_setting = user_class.ProfileSettingList().get_setting_list(profile_id)
 
-    if user_message['payload']['arguments']:
-        if user_message['payload']['arguments']['setting_id'] in [i.setting_id for i in user_setting]:
-            user_class.ProfileSettingList().delete_setting_from_list(user_message['payload']['arguments']['profile_id'],
-                                                                     user_message['payload']['arguments']['setting_id'])
+    if user_message['payload']['args']:
+        if user_message['payload']['args']['setting_id'] in [i.setting_id for i in user_setting]:
+            user_class.ProfileSettingList().delete_setting_from_list(user_message['payload']['args']['profile_id'],
+                                                                     user_message['payload']['args']['setting_id'])
 
         else:
-            user_class.ProfileSettingList().add_setting(user_message['payload']['arguments']['profile_id'],
-                                                        user_message['payload']['arguments']['setting_id'])
+            user_class.ProfileSettingList().add_setting(user_message['payload']['args']['profile_id'],
+                                                        user_message['payload']['args']['setting_id'])
         user_setting = user_class.ProfileSettingList().get_setting_list(profile_id)
     message = 'Выберите подходящие сеттинги для игры:\n' \
               '• Первое нажатие добавляет в список\n' \
@@ -262,12 +270,12 @@ def change_setting_list(user_message):
         color = 'default'
         if stt.id in user_setting_ids:
             color = 'positive'
-        setting_btn.append(vk_api.new_button(stt.title, {'menu_id': 'change_setting_list',
-                                                         'arguments': {'setting_id': stt.id,
+        setting_btn.append(vk_api.new_button(stt.title, {'m_id': 'change_setting_list',
+                                                         'args': {'setting_id': stt.id,
                                                                        'profile_id': profile_id}}, color))
 
     button_return = vk_api.new_button('Вернуться к анкете',
-                                      {'menu_id': 'change_profile', 'arguments': None}, 'primary')
+                                      {'m_id': 'change_profile', 'args': None}, 'primary')
     return {'message': message, 'keyboard': [setting_btn, [button_return]]}
 
 
@@ -277,7 +285,7 @@ def change_description(user_message):
     user_info.save()
     message = 'Введите описание вашего персонажа'
     button_return = vk_api.new_button('Вернуться к анкете',
-                                      {'menu_id': 'change_profile', 'arguments': None}, 'negative')
+                                      {'m_id': 'change_profile', 'args': None}, 'negative')
     return {'message': message, 'keyboard': [[button_return]]}
 
 
@@ -285,9 +293,9 @@ def save_description(user_message):
     description_len = 500
     lines_count = 15
     button_return = vk_api.new_button('Вернуться к анкете',
-                                      {'menu_id': 'change_profile', 'arguments': None}, 'negative')
+                                      {'m_id': 'change_profile', 'args': None}, 'negative')
     button_try_again = vk_api.new_button('Ввести описание заново',
-                                         {'menu_id': 'change_description', 'arguments': None}, 'positive')
+                                         {'m_id': 'change_description', 'args': None}, 'positive')
     if len(user_message['text']) > description_len:
         message = f'Длина описания превосходит {description_len} символов.\n' \
                   f'Постарайтесь сократить описание, оставив только самое важное.'
@@ -318,7 +326,7 @@ def change_images(user_message):
               'Лучше всего использовать изображения, на которых хорошо видна внешность персонажа, ' \
               'его характер и подходящая для него обстановка.'
     button_return = vk_api.new_button('Вернуться к анкете',
-                                      {'menu_id': 'change_profile', 'arguments': None}, 'negative')
+                                      {'m_id': 'change_profile', 'args': None}, 'negative')
     return {'message': message, 'keyboard': [[button_return]]}
 
 
@@ -328,8 +336,8 @@ def input_images(user_message):
     images = [f"photo{i['owner_id']}_{i['id']}_{i.get('access_key', '')}" for i in images_attachments]
 
     message = 'Сохранить эти изображения?'
-    button_yes = vk_api.new_button('Да, всё верно', {'menu_id': 'save_images', 'arguments': None}, 'positive')
-    button_no = vk_api.new_button('Нет, загрузить другие', {'menu_id': 'change_images', 'arguments': None}, 'negative')
+    button_yes = vk_api.new_button('Да, всё верно', {'m_id': 'save_images', 'args': None}, 'positive')
+    button_no = vk_api.new_button('Нет, загрузить другие', {'m_id': 'change_images', 'args': None}, 'negative')
     return {'message': message, 'keyboard': [[button_yes], [button_no]], 'attachment': images}
 
 
@@ -338,9 +346,9 @@ def save_images(user_message):
     images = [f"photo{i['owner_id']}_{i['id']}_{i.get('access_key', '')}" for i in images_attachments]
 
     button_return = vk_api.new_button('Вернуться к анкете',
-                                      {'menu_id': 'change_profile', 'arguments': None}, 'negative')
+                                      {'m_id': 'change_profile', 'args': None}, 'negative')
     button_try_again = vk_api.new_button('Отправить изображения снова',
-                                         {'menu_id': 'change_images', 'arguments': None}, 'positive')
+                                         {'m_id': 'change_images', 'args': None}, 'positive')
     if len(images) == 0:
         message = f'Это не слишком похоже на подходящие для анкеты изображения. Попробуйте загрузить заново.'
         return {'message': message, 'keyboard': [[button_return, button_try_again]]}
@@ -357,8 +365,8 @@ def save_images(user_message):
 def profiles_search(user_message):
     message = 'Поиск соигроков'
     button_by_profile = vk_api.new_button('Найти соигроков подходящих к анкете',
-                                          {'menu_id': 'choose_profile_to_search', 'arguments': None})
-    button_main = vk_api.new_button('Главное меню', {'menu_id': 'main', 'arguments': None}, 'primary')
+                                          {'m_id': 'choose_profile_to_search', 'args': None})
+    button_main = vk_api.new_button('Главное меню', {'m_id': 'main', 'args': None}, 'primary')
     return {'message': message, 'keyboard': [[button_by_profile], [button_main]]}
 
 
@@ -368,10 +376,10 @@ def choose_profile_to_search(user_message):
     pr_buttons = list()
     for num, pr in enumerate(profiles):
         pr_buttons.append([vk_api.new_button(pr.name,
-                                             {'menu_id': 'search_by_profile',
-                                              'arguments': {'profile_id': pr.id}})])
+                                             {'m_id': 'search_by_profile',
+                                              'args': {'profile_id': pr.id}})])
 
-    button_main = vk_api.new_button('Главное меню', {'menu_id': 'main', 'arguments': None}, 'primary')
+    button_main = vk_api.new_button('Главное меню', {'m_id': 'main', 'args': None}, 'primary')
     return {'message': message, 'keyboard': pr_buttons + [[button_main]]}
 
 
@@ -379,10 +387,10 @@ def search_by_profile(user_message):
     profiles_per_page = 4
     user_info = user_class.get_user(user_message['from_id'])
     try:
-        if 'profile_id' in user_message['payload']['arguments']:
-            user_info.item_id = user_message['payload']['arguments']['profile_id']
-        if 'iter' in user_message['payload']['arguments']:
-            user_info.list_iter = user_message['payload']['arguments']['iter']
+        if 'profile_id' in user_message['payload']['args']:
+            user_info.item_id = user_message['payload']['args']['profile_id']
+        if 'iter' in user_message['payload']['args']:
+            user_info.list_iter = user_message['payload']['args']['iter']
         user_info.save()
     except:
         pass
@@ -401,8 +409,12 @@ def search_by_profile(user_message):
             if pr.owner_id in confirmed_users:
                 color = 'positive'
         pr_buttons.append([vk_api.new_button(pr.name,
-                                             {'menu_id': 'show_player_profile',
-                                              'arguments': {'profile_id': pr.id}}, color)])
+                                             {'m_id': 'show_player_profile',
+                                              'args': {'profile_id': pr.id,
+                                                       'btn_back': {'label': 'К списку анкет',
+                                                                    'm_id': 'search_by_profile',
+                                                                    'args': None}
+                                                       }}, color)])
 
     prew_color, next_color, prew_iter, next_iter = 'default', 'default', user_info.list_iter, user_info.list_iter
     if user_info.list_iter > 0:
@@ -411,39 +423,61 @@ def search_by_profile(user_message):
     if (user_info.list_iter + 1) * profiles_per_page < len(suitable_profiles):
         next_color = 'primary'
         next_iter = user_info.list_iter + 1
-    button_prew = vk_api.new_button('Предыдущая страница', {'menu_id': 'search_by_profile',
-                                                            'arguments': {'iter': prew_iter}}, prew_color)
-    button_next = vk_api.new_button('Следующая страница', {'menu_id': 'search_by_profile',
-                                                           'arguments': {'iter': next_iter}}, next_color)
-    button_main = vk_api.new_button('Главное меню', {'menu_id': 'main', 'arguments': None}, 'primary')
+    button_prew = vk_api.new_button('Предыдущая страница', {'m_id': 'search_by_profile',
+                                                            'args': {'iter': prew_iter}}, prew_color)
+    button_next = vk_api.new_button('Следующая страница', {'m_id': 'search_by_profile',
+                                                           'args': {'iter': next_iter}}, next_color)
+    button_main = vk_api.new_button('Главное меню', {'m_id': 'main', 'args': None}, 'primary')
     return {'message': message, 'keyboard': pr_buttons + [[button_prew, button_next]] + [[button_main]]}
 
 
 def show_player_profile(user_message):
     user_info = user_class.get_user(user_message['from_id'])
-    try:
-        user_info.tmp_item_id = user_message['payload']['arguments']['profile_id']
+    if 'profile_id' in user_message['payload']['args']:
+        user_info.tmp_item_id = user_message['payload']['args']['profile_id']
         user_info.save()
-    except:
-        pass
 
     try:
-        if user_message['payload']['arguments']['offer']:
-            user_class.RoleOffer().create_offer(user_info.id, user_info.tmp_item_id)
-        else:
-            user_class.RoleOffer().delete_offer(user_info.id, user_info.tmp_item_id)
+        if 'offer' in user_message['payload']['args']:
+            if user_message['payload']['args']['offer']:
+                user_class.RoleOffer().create_offer(user_info.id, user_info.tmp_item_id)
+                rp_profile = user_class.get_rp_profile(user_info.tmp_item_id)
+                notification = user_class.create_notification(rp_profile.owner_id, 'Предложение ролевой')
+                notification.description = f'Пользователь [id{user_info.id}|{user_info.name}] ' \
+                                           f'{t_ext.gender_msg("предожил", "предожила", user_info.is_fem)}' \
+                                           f' вам ролевую, вы можете просмотреть ' \
+                                           f'{t_ext.gender_msg("его", "её", user_info.is_fem)} анкеты.'
+                notification.create_time = int(time.time())
+                buttons = list()
+                profiles = user_class.get_user_profiles(user_message['from_id'])
+                for pr in profiles:
+                    buttons.append({'label': pr.name,
+                                    'm_id': 'show_player_profile',
+                                    'args': {'profile_id': pr.id,
+                                             'btn_back': {'label': 'Вернуться к уведомлению',
+                                                          'm_id': 'notification_display',
+                                                          'args': None}}})
+                notification.buttons = json.dumps(buttons, ensure_ascii=False)
+                notification.save()
+            else:
+                user_class.RoleOffer().delete_offer(user_info.id, user_info.tmp_item_id)
     except Exception as e:
         print('show_player_profile', e)
         pass
 
     message = rp_profile_display(user_info.tmp_item_id)
     if user_class.RoleOffer().is_offer_to_profile(user_info.id, user_info.tmp_item_id):
-        button_offer = vk_api.new_button('Отменить предложение', {'menu_id': 'show_player_profile',
-                                                                  'arguments': {'offer': False}}, 'negative')
+        button_offer = vk_api.new_button('Отменить предложение', {'m_id': 'show_player_profile',
+                                                                  'args': {'offer': False}}, 'negative')
     else:
-        button_offer = vk_api.new_button('Предложить ролевую', {'menu_id': 'show_player_profile',
-                                                                'arguments': {'offer': True}}, 'positive')
-    button_back = vk_api.new_button('К списку анкет', {'menu_id': 'search_by_profile', 'arguments': None}, 'primary')
+        button_offer = vk_api.new_button('Предложить ролевую', {'m_id': 'show_player_profile',
+                                                                'args': {'offer': True}}, 'positive')
+
+    if 'btn_back' in user_message['payload']['args']:
+        btn_back = user_message['payload']['args']['btn_back']
+        button_back = vk_api.new_button(btn_back['label'], {'m_id': btn_back['m_id'], 'args': btn_back['args']})
+    else:
+        button_back = vk_api.new_button('В главное меню', {'m_id': 'main', 'args': None}, 'primary')
     message.update({'keyboard': [[button_offer], [button_back]]})
     return message
 
@@ -452,9 +486,41 @@ def show_player_profile(user_message):
 
 
 def notifications(user_message):
+    notifications_list = user_class.get_user_notifications(user_message['from_id'])
     message = 'Список уведомлений'
-    button_main = vk_api.new_button('Главное меню', {'menu_id': 'main', 'arguments': None}, 'primary')
-    return {'message': message, 'keyboard': [[button_main]]}
+    nt_buttons = list()
+    for num, nt in enumerate(notifications_list):
+        nt_buttons.append([vk_api.new_button(nt.title,
+                                             {'m_id': 'notification_display',
+                                              'args': {'nt_id': nt.id}})])
+
+    button_main = vk_api.new_button('Главное меню', {'m_id': 'main', 'args': None}, 'primary')
+    return {'message': message, 'keyboard': nt_buttons + [[button_main]]}
+
+
+def notification_display(user_message):
+    user_info = user_class.get_user(user_message['from_id'])
+    if user_message['payload']['args'] and 'nt_id' in user_message['payload']['args']:
+        user_info.item_id = user_message['payload']['args']['nt_id']
+        user_info.save()
+
+    nt_info = user_class.get_notification(user_info.item_id)
+    if not nt_info:
+        return access_error()
+
+    nt_info.is_read = True
+    nt_info.save()
+    notification = dict({'message': ''})
+    notification['message'] += f'Название: {nt_info.title}\n'
+    notification['message'] += f'Сообщение: {nt_info.description}\n'
+    notification['attachment'] = ','.join(json.loads(nt_info.attachment))
+    notification['keyboard'] = list()
+    for nt_btn in json.loads(nt_info.buttons):
+        notification['keyboard'].append([vk_api.new_button(nt_btn['label'],
+                                                           {'m_id': nt_btn['m_id'], 'args': nt_btn['args']})])
+    notification['keyboard'].append([vk_api.new_button('Вернуться к уведомлениям',
+                                                       {'m_id': 'notifications', 'args': None}, 'primary')])
+    return notification
 
 
 def role_offers(user_message):
@@ -463,7 +529,7 @@ def role_offers(user_message):
 
 def user_account(user_message):
     message = 'Настройки аккаунта'
-    button_main = vk_api.new_button('Главное меню', {'menu_id': 'main', 'arguments': None}, 'primary')
+    button_main = vk_api.new_button('Главное меню', {'m_id': 'main', 'args': None}, 'primary')
     return {'message': message, 'keyboard': [[button_main]]}
 
 
@@ -472,7 +538,7 @@ def empty_func(user_message):
     message = 'Этого меню еще нет, но раз вы сюда пришли, вот вам монетка!'
     user_info.money += 1
     user_info.save()
-    button_1 = vk_api.new_button('Главное меню', {'menu_id': 'main', 'arguments': None}, 'primary')
+    button_1 = vk_api.new_button('Главное меню', {'m_id': 'main', 'args': None}, 'primary')
     return {'message': message, 'keyboard': [[button_1]]}
 
 
@@ -483,7 +549,7 @@ def admin_setting_list(user_message):
     user_info = user_class.get_user(user_message['from_id'])
 
     if not user_info.is_admin:
-        return access_error(user_message)
+        return access_error()
 
     message = 'Список доступных сеттингов.\n' \
               'Выберите тот, который хотите изменить или удалить.'
@@ -491,19 +557,19 @@ def admin_setting_list(user_message):
 
     setting_btn = list()
     for stt in setting:
-        setting_btn.append(vk_api.new_button(stt.title, {'menu_id': 'admin_setting_info',
-                                                         'arguments': {'setting_id': stt.id}}, 'default'))
+        setting_btn.append(vk_api.new_button(stt.title, {'m_id': 'admin_setting_info',
+                                                         'args': {'setting_id': stt.id}}, 'default'))
 
-    button_create = vk_api.new_button('Добавить новый сеттинг', {'menu_id': 'admin_create_setting',
-                                                                 'arguments': None}, 'positive')
-    button_return = vk_api.new_button('Вернуться в главное меню', {'menu_id': 'main', 'arguments': None}, 'primary')
+    button_create = vk_api.new_button('Добавить новый сеттинг', {'m_id': 'admin_create_setting',
+                                                                 'args': None}, 'positive')
+    button_return = vk_api.new_button('Вернуться в главное меню', {'m_id': 'main', 'args': None}, 'primary')
     return {'message': message, 'keyboard': [setting_btn, [button_create], [button_return]]}
 
 
 def admin_create_setting(user_message):
     new_setting = user_class.SettingList().create_setting()
     if not new_setting:
-        return access_error(user_message)
+        return access_error()
     user_info = user_class.get_user(user_message['from_id'])
     user_info.item_id = new_setting.id
     user_info.save()
@@ -514,7 +580,7 @@ def admin_setting_info(user_message):
     user_info = user_class.get_user(user_message['from_id'])
 
     try:
-        user_info.item_id = user_message['payload']['arguments']['setting_id']
+        user_info.item_id = user_message['payload']['args']['setting_id']
     except:
         print('что-то пошло не так')
 
@@ -522,14 +588,14 @@ def admin_setting_info(user_message):
     user_info.save()
     setting = user_class.SettingList().get_setting(user_info.item_id)
     message = f'Название сеттинга: {setting.title}'
-    btn_change = vk_api.new_button('Изменить название сеттинга', {'menu_id': 'admin_change_setting_title', 'arguments': None})
+    btn_change = vk_api.new_button('Изменить название сеттинга', {'m_id': 'admin_change_setting_title', 'args': None})
     btn_del = vk_api.new_button('Удалить сеттинг',
-                                {'menu_id': 'confirm_action',
-                                 'arguments': {'menu_id': 'admin_delete_setting',
-                                               'arguments': {'setting_id': user_info.item_id}}},
+                                {'m_id': 'confirm_action',
+                                 'args': {'m_id': 'admin_delete_setting',
+                                               'args': {'setting_id': user_info.item_id}}},
                                 'negative')
     button_return = vk_api.new_button('Вернуться к списку сеттингов',
-                                      {'menu_id': 'admin_setting_list', 'arguments': None}, 'primary')
+                                      {'m_id': 'admin_setting_list', 'args': None}, 'primary')
     return {'message': message, 'keyboard': [[btn_change], [btn_del], [button_return]]}
 
 
@@ -539,7 +605,7 @@ def admin_change_setting_title(user_message):
     user_info.save()
     message = 'Введите название сеттинга'
     button_return = vk_api.new_button('Вернуться к списку сеттингов',
-                                      {'menu_id': 'admin_setting_list', 'arguments': None}, 'negative')
+                                      {'m_id': 'admin_setting_list', 'args': None}, 'negative')
     return {'message': message, 'keyboard': [[button_return]]}
 
 
@@ -547,9 +613,9 @@ def admin_save_setting_title(user_message):
     name_len = 25
     symbols = 'abcdefghijklmnopqrstuvwxyz' + 'абвгдеёжзийклмнопрстуфхцчшщьыъэюя' + '1234567890_-,. '
     button_return = vk_api.new_button('Вернуться к списку сеттингов',
-                                      {'menu_id': 'admin_setting_list', 'arguments': None}, 'negative')
+                                      {'m_id': 'admin_setting_list', 'args': None}, 'negative')
     button_try_again = vk_api.new_button('Ввести название снова',
-                                         {'menu_id': 'admin_change_setting_title', 'arguments': None}, 'positive')
+                                         {'m_id': 'admin_change_setting_title', 'args': None}, 'positive')
     if len(user_message['text']) > 25:
         message = f'Длина названия превосходит {name_len} символов.\n Придумайте более короткий вариант.'
         return {'message': message, 'keyboard': [[button_return, button_try_again]]}
@@ -581,5 +647,5 @@ def admin_delete_setting(user_message):
     except:
         message = f'Во время удаления сеттинга произошла ошибка, попробуйте повторить запрос через некоторое время.'
     button_return = vk_api.new_button('Вернуться к списку сеттингов',
-                                      {'menu_id': 'admin_setting_list', 'arguments': None}, 'primary')
+                                      {'m_id': 'admin_setting_list', 'args': None}, 'primary')
     return {'message': message, 'keyboard': [[button_return]]}
