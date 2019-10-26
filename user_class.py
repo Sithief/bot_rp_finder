@@ -26,6 +26,19 @@ class User(peewee.Model):
         database = db
 
 
+def create_user(user_id, name, is_fem):
+    new_user = User.create(id=user_id, name=name, is_fem=is_fem)
+    return new_user
+
+
+def get_user(user_id):
+    try:
+        user = User.get(User.id == user_id)
+        return user
+    except User.DoesNotExist:
+        return False
+
+
 class RpProfile(peewee.Model):
     owner_id = peewee.IntegerField()
     name = peewee.CharField(default='Не указано')
@@ -35,6 +48,36 @@ class RpProfile(peewee.Model):
 
     class Meta:
         database = db
+
+
+def get_user_profiles(owner_id):
+    try:
+        profiles = RpProfile.select().where(RpProfile.owner_id == owner_id)
+        return profiles
+    except RpProfile.DoesNotExist:
+        return []
+
+
+def create_rp_profile(user_id):
+    new_rp_profile = RpProfile.create(owner_id=user_id)
+    return new_rp_profile
+
+
+def get_rp_profile(profile_id):
+    try:
+        rp_profile = RpProfile.get(RpProfile.id == profile_id)
+        return rp_profile
+    except RpProfile.DoesNotExist:
+        return False
+
+
+def delete_rp_profile(profile_id):
+    try:
+        delete_profile = RpProfile.delete().where(RpProfile.id == profile_id)
+        delete_profile.execute()
+        return True
+    except RpProfile.DoesNotExist:
+        return False
 
 
 class RoleOffer(peewee.Model):
@@ -161,33 +204,38 @@ class ProfileSettingList(peewee.Model):
             return False
 
 
-def get_user_profiles(owner_id):
+class Notification(peewee.Model):
+    owner_id = peewee.IntegerField(default=0)
+    title = peewee.CharField()
+    is_read = peewee.BooleanField(default=False)
+    create_time = peewee.IntegerField(default=0)
+    description = peewee.CharField(default='')
+    attachment = peewee.CharField(default='[]')
+    buttons = peewee.CharField(default='[]')
+
+    class Meta:
+        database = db
+
+
+def create_notification(owner_id, title):
+    new_notification = User.create(owner_id=owner_id, title=title)
+    return new_notification
+
+
+def get_user_notification(owner_id):
     try:
-        profiles = RpProfile.select().where(RpProfile.owner_id == owner_id)
-        return profiles
-    except RpProfile.DoesNotExist:
+        notifications = Notification.select().where(Notification.owner_id == owner_id)
+        return notifications
+    except Notification.DoesNotExist:
         return []
 
 
-def create_rp_profile(user_id):
-    new_rp_profile = RpProfile.create(owner_id=user_id)
-    return new_rp_profile
-
-
-def get_rp_profile(profile_id):
+def delete_notification(notification_id):
     try:
-        rp_profile = RpProfile.get(RpProfile.id == profile_id)
-        return rp_profile
-    except RpProfile.DoesNotExist:
-        return False
-
-
-def delete_rp_profile(profile_id):
-    try:
-        delete_profile = RpProfile.delete().where(RpProfile.id == profile_id)
-        delete_profile.execute()
+        deleted_notification = Notification.delete().where(Notification.id == notification_id)
+        deleted_notification.execute()
         return True
-    except RpProfile.DoesNotExist:
+    except Notification.DoesNotExist:
         return False
 
 
@@ -218,19 +266,6 @@ def find_suitable_profiles(profile_id):
         return suitable_profiles
     except ProfileSettingList.DoesNotExist or RpProfile.DoesNotExist:
         return []
-
-
-def create_user(user_id, name, is_fem):
-    new_user = User.create(id=user_id, name=name, is_fem=is_fem)
-    return new_user
-
-
-def get_user(user_id):
-    try:
-        user = User.get(User.id == user_id)
-        return user
-    except User.DoesNotExist:
-        return False
 
 
 if __name__ == "__main__":
