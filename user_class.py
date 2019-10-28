@@ -1,5 +1,4 @@
 import peewee
-import playhouse
 import json
 from Keys import Keys
 
@@ -133,6 +132,7 @@ class RoleOffer(peewee.Model):
 
 class SettingList(peewee.Model):
     title = peewee.CharField(default='Не указано')
+    description = peewee.CharField(default='Не указано')
 
     class Meta:
         database = db
@@ -165,7 +165,7 @@ class SettingList(peewee.Model):
             deleted_setting = self.delete().where(SettingList.id == setting_id)
             deleted_setting.execute()
             return True
-        except RpProfile.DoesNotExist:
+        except self.DoesNotExist:
             return False
 
 
@@ -199,6 +199,45 @@ class ProfileSettingList(peewee.Model):
             delete_setting = self.delete().where((ProfileSettingList.profile_id == profile_id) &
                                                  (ProfileSettingList.setting_id == setting_id))
             delete_setting.execute()
+            return True
+        except self.DoesNotExist:
+            return False
+
+
+class RpRating(peewee.Model):
+    title = peewee.CharField(default='Не указано')
+    description = peewee.CharField(default='Не указано')
+
+    class Meta:
+        database = db
+
+    def create_rp_rating(self):
+        try:
+            new_rp_rating = self.create()
+            return new_rp_rating
+        except:
+            return False
+
+    def get_rp_rating(self, rp_rating_id):
+        try:
+            rp_rating = self.get(RpRating.id == rp_rating_id)
+            return rp_rating
+        except self.DoesNotExist:
+            return []
+
+    def get_setting_list(self):
+        try:
+            rp_ratings = self.select()
+            return rp_ratings
+        except self.DoesNotExist:
+            return []
+
+    def delete_rp_rating(self, rp_rating_id):
+        try:
+            # delete_relations = ProfileSettingList().delete().where(ProfileSettingList.setting_id == setting_id)
+            # delete_relations.execute()
+            deleted_setting = self.delete().where(RpRating.id == rp_rating_id)
+            deleted_setting.execute()
             return True
         except self.DoesNotExist:
             return False
@@ -277,4 +316,9 @@ def find_suitable_profiles(profile_id):
 
 
 if __name__ == "__main__":
-    User.create_table()
+    import playhouse.migrate as playhouse_migrate
+    migrator = playhouse_migrate.SqliteMigrator(db)
+
+    playhouse_migrate.migrate(
+        migrator.add_column('SettingList', 'description', SettingList.description),
+    )
