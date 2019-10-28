@@ -34,6 +34,8 @@ def menu_hub(user_message):
              'admin_setting_info': admin_setting_info,
              'admin_change_setting_title': admin_change_setting_title,
              'admin_save_setting_title': admin_save_setting_title,
+             'admin_change_setting_description': admin_change_setting_description,
+             'admin_save_setting_description': admin_save_setting_description,
              'admin_delete_setting': admin_delete_setting}
     if 'payload' in user_message:
         if 'm_id' in user_message['payload'] and user_message['payload']['m_id'] in menus:
@@ -64,6 +66,42 @@ def access_error():
     message = 'Ошибка доступа'
     button_return = vk_api.new_button('Вернуться в главное меню', {'m_id': 'main', 'args': None}, 'primary')
     return {'message': message, 'keyboard': [[button_return]]}
+
+
+def input_title_check(user_message, title_len=25):
+    symbols = 'abcdefghijklmnopqrstuvwxyz' + 'абвгдеёжзийклмнопрстуфхцчшщьыъэюя' + '1234567890_-,. '
+
+    if len(user_message['text']) > title_len:
+        message = f'Длина текста превосходит {title_len} символов.\n Придумайте более короткий вариант.'
+        return message
+
+    elif len(user_message['text']) == 0:
+        message = f'Нужно было ввести текст.'
+        return message
+
+    elif not all([i in symbols for i in user_message['text'].lower()]):
+        error_symbols = ['"' + i.replace('\\', '\\\\') + '"' for i in user_message['text'].lower() if i not in symbols]
+        message = f"Текст содержит недопустимые символы: {' '.join(error_symbols)}"
+        return message
+    return ''
+
+
+def input_description_check(user_message, description_len=500, lines_count=15):
+    if len(user_message['text']) > description_len:
+        message = f'Длина описания превосходит {description_len} символов.\n' \
+                  f'Постарайтесь сократить описание, оставив только самое важное.'
+        return message
+
+    if len(user_message['text']) == 0:
+        message = f'Для описания нужно ввести текст.'
+        return message
+
+    if user_message['text'].count('\n') > lines_count:
+        message = f"Вы использовали перенос строки слишком часто, " \
+                  f"теперь описание занимает слишком много места на экране.\n" \
+                  f"Попробуйте уменьшить количество переносов на новую строку."
+        return message
+    return ''
 
 
 def main(user_message):
@@ -197,28 +235,18 @@ def change_name(user_message):
     message = 'Введите имя вашего персонажа'
     button_return = vk_api.new_button('Вернуться к анкете',
                                       {'m_id': 'change_profile', 'args': None}, 'negative')
+
     return {'message': message, 'keyboard': [[button_return]]}
 
 
 def save_name(user_message):
-    name_len = 25
-    symbols = 'abcdefghijklmnopqrstuvwxyz' + 'абвгдеёжзийклмнопрстуфхцчшщьыъэюя' + '1234567890_-,. '
-    button_return = vk_api.new_button('Вернуться к анкете',
-                                      {'m_id': 'change_profile', 'args': None}, 'negative')
-    button_try_again = vk_api.new_button('Ввести имя снова',
-                                         {'m_id': 'change_name', 'args': None}, 'positive')
-    if len(user_message['text']) > 25:
-        message = f'Длина имени превосходит {name_len} символов.\n Придумайте более короткий вариант.'
-        return {'message': message, 'keyboard': [[button_return, button_try_again]]}
-
-    if len(user_message['text']) == 0:
-        message = f'Это не слишком похоже на имя персонажа, вам так не кажется?'
-        return {'message': message, 'keyboard': [[button_return, button_try_again]]}
-
-    if not all([i in symbols for i in user_message['text'].lower()]):
-        error_symbols = ['"' + i.replace('\\', '\\\\') + '"' for i in user_message['text'].lower() if i not in symbols]
-        message = f"Имя содержит недопустимые символы: {' '.join(error_symbols)}"
-        return {'message': message, 'keyboard': [[button_return, button_try_again]]}
+    error_message = input_title_check(user_message)
+    if error_message:
+        button_return = vk_api.new_button('Вернуться к анкете',
+                                          {'m_id': 'change_profile', 'args': None}, 'negative')
+        button_try_again = vk_api.new_button('Ввести имя снова',
+                                             {'m_id': 'change_name', 'args': None}, 'positive')
+        return {'message': error_message, 'keyboard': [[button_return, button_try_again]]}
 
     user_info = user_class.get_user(user_message['from_id'])
     rp_profile = user_class.get_rp_profile(user_info.item_id)
@@ -255,6 +283,10 @@ def change_setting_list(user_message):
     setting = user_class.SettingList().get_setting_list()
     user_setting = user_class.ProfileSettingList().get_setting_list(profile_id)
 
+    message = 'Выберите подходящие сеттинги для игры:\n' \
+              '• Первое нажатие добавляет в список\n' \
+              '• Второе - убирает из списка'
+
     if user_message['payload']['args']:
         if user_message['payload']['args']['setting_id'] in [i.setting_id for i in user_setting]:
             user_class.ProfileSettingList().delete_setting_from_list(user_message['payload']['args']['profile_id'],
@@ -263,10 +295,11 @@ def change_setting_list(user_message):
         else:
             user_class.ProfileSettingList().add_setting(user_message['payload']['args']['profile_id'],
                                                         user_message['payload']['args']['setting_id'])
+            setting_info = user_class.SettingList().get_setting(user_message['payload']['args']['setting_id'])
+            message += f'\n\n' \
+                       f'Вы добавили сеттинг: "{setting_info.title}"\n' \
+                       f'Его описание: {setting_info.description}'
         user_setting = user_class.ProfileSettingList().get_setting_list(profile_id)
-    message = 'Выберите подходящие сеттинги для игры:\n' \
-              '• Первое нажатие добавляет в список\n' \
-              '• Второе - убирает из списка'
 
     setting_btn = list()
     user_setting_ids = [i.setting_id for i in user_setting]
@@ -294,26 +327,13 @@ def change_description(user_message):
 
 
 def save_description(user_message):
-    description_len = 500
-    lines_count = 15
-    button_return = vk_api.new_button('Вернуться к анкете',
-                                      {'m_id': 'change_profile', 'args': None}, 'negative')
-    button_try_again = vk_api.new_button('Ввести описание заново',
-                                         {'m_id': 'change_description', 'args': None}, 'positive')
-    if len(user_message['text']) > description_len:
-        message = f'Длина описания превосходит {description_len} символов.\n' \
-                  f'Постарайтесь сократить описание, оставив только самое важное.'
-        return {'message': message, 'keyboard': [[button_return, button_try_again]]}
-
-    if len(user_message['text']) == 0:
-        message = f'Вам не кажется, что это не слишком подойдёт для описания персонажа?'
-        return {'message': message, 'keyboard': [[button_return, button_try_again]]}
-
-    if user_message['text'].count('\n') > lines_count:
-        message = f"Вы использовали перенос строки слишком часто, " \
-                  f"теперь анкета занимает слишком много места на экране.\n" \
-                  f"Попробуйте уменьшить количество переносов на новую строку."
-        return {'message': message, 'keyboard': [[button_return, button_try_again]]}
+    error_message = input_description_check(user_message)
+    if error_message:
+        button_return = vk_api.new_button('Вернуться к анкете',
+                                          {'m_id': 'change_profile', 'args': None}, 'negative')
+        button_try_again = vk_api.new_button('Ввести опсание снова',
+                                             {'m_id': 'change_name', 'args': None}, 'positive')
+        return {'message': error_message, 'keyboard': [[button_return, button_try_again]]}
 
     user_info = user_class.get_user(user_message['from_id'])
     rp_profile = user_class.get_rp_profile(user_info.item_id)
@@ -603,16 +623,20 @@ def admin_setting_info(user_message):
     user_info.menu_id = 'admin_setting_info'
     user_info.save()
     setting = user_class.SettingList().get_setting(user_info.item_id)
-    message = f'Название сеттинга: {setting.title}'
-    btn_change = vk_api.new_button('Изменить название сеттинга', {'m_id': 'admin_change_setting_title', 'args': None})
+    message = f'Название сеттинга: {setting.title}\n' \
+              f'Описание сеттинга: {setting.description}'
+    btn_change_title = vk_api.new_button('Изменить название сеттинга',
+                                         {'m_id': 'admin_change_setting_title', 'args': None})
+    btn_change_description = vk_api.new_button('Изменить описание сеттинга',
+                                               {'m_id': 'admin_change_setting_description', 'args': None})
     btn_del = vk_api.new_button('Удалить сеттинг',
                                 {'m_id': 'confirm_action',
                                  'args': {'m_id': 'admin_delete_setting',
-                                               'args': {'setting_id': user_info.item_id}}},
+                                                  'args': {'setting_id': user_info.item_id}}},
                                 'negative')
     button_return = vk_api.new_button('Вернуться к списку сеттингов',
                                       {'m_id': 'admin_setting_list', 'args': None}, 'primary')
-    return {'message': message, 'keyboard': [[btn_change], [btn_del], [button_return]]}
+    return {'message': message, 'keyboard': [[btn_change_title], [btn_change_description], [btn_del], [button_return]]}
 
 
 def admin_change_setting_title(user_message):
@@ -626,28 +650,43 @@ def admin_change_setting_title(user_message):
 
 
 def admin_save_setting_title(user_message):
-    name_len = 25
-    symbols = 'abcdefghijklmnopqrstuvwxyz' + 'абвгдеёжзийклмнопрстуфхцчшщьыъэюя' + '1234567890_-,. '
-    button_return = vk_api.new_button('Вернуться к списку сеттингов',
-                                      {'m_id': 'admin_setting_list', 'args': None}, 'negative')
-    button_try_again = vk_api.new_button('Ввести название снова',
-                                         {'m_id': 'admin_change_setting_title', 'args': None}, 'positive')
-    if len(user_message['text']) > 25:
-        message = f'Длина названия превосходит {name_len} символов.\n Придумайте более короткий вариант.'
-        return {'message': message, 'keyboard': [[button_return, button_try_again]]}
-
-    if len(user_message['text']) == 0:
-        message = f'Это не слишком похоже на название сеттинга, вам так не кажется?'
-        return {'message': message, 'keyboard': [[button_return, button_try_again]]}
-
-    if not all([i in symbols for i in user_message['text'].lower()]):
-        error_symbols = ['"' + i.replace('\\', '\\\\') + '"' for i in user_message['text'].lower() if i not in symbols]
-        message = f"Название содержит недопустимые символы: {' '.join(error_symbols)}"
-        return {'message': message, 'keyboard': [[button_return, button_try_again]]}
+    error_message = input_title_check(user_message)
+    if error_message:
+        button_return = vk_api.new_button('Вернуться к списку сеттингов',
+                                          {'m_id': 'admin_setting_list', 'args': None}, 'negative')
+        button_try_again = vk_api.new_button('Ввести название снова',
+                                             {'m_id': 'admin_change_setting_title', 'args': None}, 'positive')
+        return {'message': error_message, 'keyboard': [[button_return, button_try_again]]}
 
     user_info = user_class.get_user(user_message['from_id'])
     setting = user_class.SettingList().get_setting(user_info.item_id)
     setting.title = user_message['text']
+    setting.save()
+    return admin_setting_info(user_message)
+
+
+def admin_change_setting_description(user_message):
+    user_info = user_class.get_user(user_message['from_id'])
+    user_info.menu_id = 'admin_save_setting_description'
+    user_info.save()
+    message = 'Введите описание сеттинга'
+    button_return = vk_api.new_button('Вернуться к списку сеттингов',
+                                      {'m_id': 'admin_setting_list', 'args': None}, 'negative')
+    return {'message': message, 'keyboard': [[button_return]]}
+
+
+def admin_save_setting_description(user_message):
+    error_message = input_description_check(user_message)
+    if error_message:
+        button_return = vk_api.new_button('Вернуться к списку сеттингов',
+                                          {'m_id': 'admin_setting_list', 'args': None}, 'negative')
+        button_try_again = vk_api.new_button('Ввести описание снова',
+                                             {'m_id': 'admin_change_setting_title', 'args': None}, 'positive')
+        return {'message': error_message, 'keyboard': [[button_return, button_try_again]]}
+
+    user_info = user_class.get_user(user_message['from_id'])
+    setting = user_class.SettingList().get_setting(user_info.item_id)
+    setting.description = user_message['text']
     setting.save()
     return admin_setting_info(user_message)
 
