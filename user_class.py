@@ -172,6 +172,7 @@ class SettingList(peewee.Model):
 class ProfileSettingList(peewee.Model):
     profile_id = peewee.IntegerField()
     setting_id = peewee.IntegerField()
+    is_allowed = peewee.BooleanField(default=True)
 
     class Meta:
         database = db
@@ -234,10 +235,46 @@ class RpRating(peewee.Model):
 
     def delete_rp_rating(self, rp_rating_id):
         try:
-            # delete_relations = ProfileSettingList().delete().where(ProfileSettingList.setting_id == setting_id)
-            # delete_relations.execute()
+            delete_relations = ProfileRpRatingList().delete().where(ProfileRpRatingList.rp_rating_id == rp_rating_id)
+            delete_relations.execute()
             deleted_setting = self.delete().where(RpRating.id == rp_rating_id)
             deleted_setting.execute()
+            return True
+        except self.DoesNotExist:
+            return False
+
+
+class ProfileRpRatingList(peewee.Model):
+    profile_id = peewee.IntegerField()
+    rp_rating_id = peewee.IntegerField()
+    is_allowed = peewee.BooleanField(default=True)
+
+    class Meta:
+        database = db
+        primary_key = peewee.CompositeKey('profile_id', 'rp_rating_id')
+
+    def add_rp_rating(self, profile_id, rp_rating_id):
+        try:
+            added_rp_rating = self.create(profile_id=profile_id,
+                                          rp_rating_id=rp_rating_id)
+            return added_rp_rating
+        except:
+            return False
+
+    def get_rp_rating_list(self, profile_id):
+        try:
+            rp_rating_list = self.select(ProfileRpRatingList, RpRating)\
+                                 .where(ProfileRpRatingList.profile_id == profile_id)\
+                                 .join(RpRating, on=(ProfileRpRatingList.rp_rating_id == RpRating.id).alias('setting'))
+            return rp_rating_list
+        except self.DoesNotExist:
+            return []
+
+    def delete_setting_from_list(self, profile_id, rp_rating_id):
+        try:
+            delete_rp_rating = self.delete().where((ProfileRpRatingList.profile_id == profile_id) &
+                                                   (ProfileRpRatingList.rp_rating_id == rp_rating_id))
+            delete_rp_rating.execute()
             return True
         except self.DoesNotExist:
             return False
@@ -320,5 +357,5 @@ if __name__ == "__main__":
     migrator = playhouse_migrate.SqliteMigrator(db)
 
     playhouse_migrate.migrate(
-        migrator.add_column('SettingList', 'description', SettingList.description),
+        migrator.add_column('ProfileSettingList', 'is_allowed', ProfileSettingList.is_allowed),
     )
