@@ -328,7 +328,31 @@ def count_similarity_score(user_profile, player_profile):
     user_setting = ProfileSettingList().get_setting_list(user_profile.id)
     player_setting = ProfileSettingList().get_setting_list(player_profile.id)
 
-    score += len(set(i.setting_id for i in user_setting) & set(i.setting_id for i in player_setting))
+    user_allowed_setting = set(i.setting_id for i in user_setting if i.is_allowed)
+    player_allowed_setting = set(i.setting_id for i in player_setting if i.is_allowed)
+    user_not_allowed_setting = set(i.setting_id for i in user_setting if not i.is_allowed)
+    player_not_allowed_setting = set(i.setting_id for i in player_setting if not i.is_allowed)
+
+    score += len(user_allowed_setting & player_allowed_setting)
+    score += len(user_not_allowed_setting & player_not_allowed_setting)
+
+    score -= len(user_allowed_setting & player_not_allowed_setting)
+    score -= len(user_not_allowed_setting & player_allowed_setting)
+
+    user_rating = ProfileRpRatingList().get_item_list(user_profile.id)
+    player_rating = ProfileRpRatingList().get_item_list(player_profile.id)
+
+    user_allowed_rating = set(i.item_id for i in user_rating if i.is_allowed)
+    player_allowed_rating = set(i.item_id for i in player_rating if i.is_allowed)
+    user_not_allowed_rating = set(i.item_id for i in user_rating if not i.is_allowed)
+    player_not_allowed_rating = set(i.item_id for i in player_rating if not i.is_allowed)
+
+    score += len(user_allowed_rating & player_allowed_rating)
+    score += len(user_not_allowed_rating & player_not_allowed_rating)
+
+    score -= len(user_allowed_rating & player_not_allowed_rating)
+    score -= len(user_not_allowed_rating & player_allowed_rating)
+
     return score
 
 
@@ -336,10 +360,17 @@ def find_suitable_profiles(profile_id):
     # TODO доделать поиск по остальным параметрам
     try:
         user_profile = get_rp_profile(profile_id)
-        setting_list = [i.setting_id for i in ProfileSettingList().get_setting_list(profile_id)]
-        suit_prof_ids = [i.profile_id for i in
-                         ProfileSettingList.select().where(ProfileSettingList.setting_id.in_(setting_list))]
+        setting_list = [i.setting_id for i in ProfileSettingList().get_setting_list(profile_id) if i.is_allowed]
+        suit_by_setting_ids = [i.profile_id for i in
+                               ProfileSettingList.select().where((ProfileSettingList.setting_id.in_(setting_list) &
+                                                                  ProfileSettingList.is_allowed))]
 
+        rating_list = [i.item_id for i in ProfileRpRatingList().get_item_list(profile_id) if i.is_allowed]
+        suit_by_rating_ids = [i.profile_id for i in
+                              ProfileRpRatingList.select().where((ProfileRpRatingList.item_id.in_(rating_list) &
+                                                                  ProfileRpRatingList.is_allowed))]
+
+        suit_prof_ids = list(set(suit_by_setting_ids + suit_by_rating_ids))
         suitable_profiles = RpProfile.select().where(RpProfile.id.in_(suit_prof_ids) &
                                                      (RpProfile.owner_id != user_profile.owner_id))
 
