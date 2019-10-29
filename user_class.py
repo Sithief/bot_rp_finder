@@ -212,28 +212,28 @@ class RpRating(peewee.Model):
     class Meta:
         database = db
 
-    def create_rp_rating(self):
+    def create_item(self):
         try:
             new_rp_rating = self.create()
             return new_rp_rating
         except:
             return False
 
-    def get_rp_rating(self, rp_rating_id):
+    def get_item(self, rp_rating_id):
         try:
             rp_rating = self.get(RpRating.id == rp_rating_id)
             return rp_rating
         except self.DoesNotExist:
             return []
 
-    def get_setting_list(self):
+    def get_items_list(self):
         try:
             rp_ratings = self.select()
             return rp_ratings
         except self.DoesNotExist:
             return []
 
-    def delete_rp_rating(self, rp_rating_id):
+    def delete_item(self, rp_rating_id):
         try:
             delete_relations = ProfileRpRatingList().delete().where(ProfileRpRatingList.rp_rating_id == rp_rating_id)
             delete_relations.execute()
@@ -350,6 +350,17 @@ def find_suitable_profiles(profile_id):
         return suitable_profiles
     except ProfileSettingList.DoesNotExist or RpProfile.DoesNotExist:
         return []
+
+
+def init_db():
+    User.create_table()
+    RpProfile.create_table()
+    RoleOffer.create_table()
+    SettingList.create_table()
+    ProfileSettingList.create_table()
+    Notification.create_table()
+    RpRating.create_table()
+    ProfileRpRatingList.create_table()
 
 
 if __name__ == "__main__":

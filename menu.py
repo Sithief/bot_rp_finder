@@ -36,7 +36,17 @@ def menu_hub(user_message):
              'admin_save_setting_title': admin_save_setting_title,
              'admin_change_setting_description': admin_change_setting_description,
              'admin_save_setting_description': admin_save_setting_description,
-             'admin_delete_setting': admin_delete_setting}
+             'admin_delete_setting': admin_delete_setting,
+
+             'admin_rp_rating_list': admin_rp_rating_list,
+             'admin_create_rp_rating': admin_create_rp_rating,
+             'admin_rp_rating_info': admin_rp_rating_info,
+             'admin_change_rp_rating_title': admin_change_rp_rating_title,
+             'admin_save_rp_rating_title': admin_save_rp_rating_title,
+             'admin_change_rp_rating_description': admin_change_rp_rating_description,
+             'admin_save_rp_rating_description': admin_save_rp_rating_description,
+             'admin_delete_rp_rating': admin_delete_rp_rating
+             }
     if 'payload' in user_message:
         if 'm_id' in user_message['payload'] and user_message['payload']['m_id'] in menus:
             return menus[user_message['payload']['m_id']](user_message)
@@ -69,7 +79,7 @@ def access_error():
 
 
 def input_title_check(user_message, title_len=25):
-    symbols = 'abcdefghijklmnopqrstuvwxyz' + 'абвгдеёжзийклмнопрстуфхцчшщьыъэюя' + '1234567890_-,. '
+    symbols = 'abcdefghijklmnopqrstuvwxyz' + 'абвгдеёжзийклмнопрстуфхцчшщьыъэюя' + "1234567890_-+,. '()"
 
     if len(user_message['text']) > title_len:
         message = f'Длина текста превосходит {title_len} символов.\n Придумайте более короткий вариант.'
@@ -116,8 +126,11 @@ def main(user_message):
     button_profiles = vk_api.new_button('Мои анкеты', {'m_id': 'user_profiles'})
     button_search = vk_api.new_button('Найти соигроков', {'m_id': 'profiles_search'})
     button_admin_setting = []
+    button_admin_rp_rating = []
     if user_info.is_admin:
         button_admin_setting = [vk_api.new_button('Настройки списка сеттингов', {'m_id': 'admin_setting_list'})]
+        button_admin_rp_rating = [vk_api.new_button('Настройки списка рейтингов ролевой',
+                                                    {'m_id': 'admin_rp_rating_list'})]
 
     notifications_list = user_class.get_user_notifications(user_message['from_id'])
     notification_count = len([i for i in notifications_list if not i.is_read])
@@ -128,7 +141,8 @@ def main(user_message):
     return {'message': message, 'keyboard': [[button_profiles],
                                              [button_search],
                                              [button_notifications],
-                                             button_admin_setting]}
+                                             button_admin_setting,
+                                             button_admin_rp_rating]}
 
 # создание и изменение анкет
 
@@ -559,10 +573,6 @@ def notification_display(user_message):
     return notification
 
 
-def role_offers(user_message):
-    pass
-
-
 def user_account(user_message):
     message = 'Настройки аккаунта'
     button_main = vk_api.new_button('Главное меню', {'m_id': 'main', 'args': None}, 'primary')
@@ -704,3 +714,142 @@ def admin_delete_setting(user_message):
     button_return = vk_api.new_button('Вернуться к списку сеттингов',
                                       {'m_id': 'admin_setting_list', 'args': None}, 'primary')
     return {'message': message, 'keyboard': [[button_return]]}
+
+
+# TODO
+
+
+def admin_create_rp_rating(user_message):
+    new_item = user_class.RpRating().create_item()
+    if not new_item:
+        return access_error()
+    user_info = user_class.get_user(user_message['from_id'])
+    user_info.item_id = new_item.id
+    user_info.save()
+    return admin_rp_rating_info(user_message)
+
+
+def admin_rp_rating_list(user_message):
+    user_info = user_class.get_user(user_message['from_id'])
+
+    if not user_info.is_admin:
+        return access_error()
+
+    message = 'Список доступных рейтингов ролевых.\n' \
+              'Выберите тот, который хотите изменить или удалить.'
+    items = user_class.RpRating().get_items_list()
+
+    items_btn = list()
+    for rpr in items:
+        items_btn.append(vk_api.new_button(rpr.title, {'m_id': 'admin_rp_rating_info',
+                                                       'args': {'rp_rating_id': rpr.id}}, 'default'))
+
+    button_create = vk_api.new_button('Добавить новый рейтинг ролевой', {'m_id': 'admin_create_rp_rating',
+                                                                         'args': None}, 'positive')
+    button_return = vk_api.new_button('Вернуться в главное меню', {'m_id': 'main', 'args': None}, 'primary')
+    return {'message': message, 'keyboard': [items_btn, [button_create], [button_return]]}
+
+
+def admin_rp_rating_setting(user_message):
+    new_item = user_class.RpRating().create_item()
+    if not new_item:
+        return access_error()
+    user_info = user_class.get_user(user_message['from_id'])
+    user_info.item_id = new_item.id
+    user_info.save()
+    return admin_rp_rating_info(user_message)
+
+
+def admin_rp_rating_info(user_message):
+    user_info = user_class.get_user(user_message['from_id'])
+
+    try:
+        user_info.item_id = user_message['payload']['args']['rp_rating_id']
+    except:
+        print('что-то пошло не так')
+
+    user_info.menu_id = 'admin_rp_rating_info'
+    user_info.save()
+    item = user_class.RpRating().get_item(user_info.item_id)
+    message = f'Название рейтинга ролевой: {item.title}\n' \
+              f'Описание рейтинга ролевой: {item.description}'
+    btn_change_title = vk_api.new_button('Изменить название',
+                                         {'m_id': 'admin_change_rp_rating_title', 'args': None})
+    btn_change_description = vk_api.new_button('Изменить описание',
+                                               {'m_id': 'admin_change_rp_rating_description', 'args': None})
+    btn_del = vk_api.new_button('Удалить сеттинг',
+                                {'m_id': 'confirm_action',
+                                 'args': {'m_id': 'admin_delete_rp_rating',
+                                                  'args': {'rp_rating_id': user_info.item_id}}},
+                                'negative')
+    button_return = vk_api.new_button('Вернуться к списку сеттингов',
+                                      {'m_id': 'admin_rp_rating_list', 'args': None}, 'primary')
+    return {'message': message, 'keyboard': [[btn_change_title], [btn_change_description], [btn_del], [button_return]]}
+
+
+def admin_change_rp_rating_title(user_message):
+    user_info = user_class.get_user(user_message['from_id'])
+    user_info.menu_id = 'admin_save_rp_rating_title'
+    user_info.save()
+    message = 'Введите название'
+    button_return = vk_api.new_button('Вернуться к списку',
+                                      {'m_id': 'admin_rp_rating_list', 'args': None}, 'negative')
+    return {'message': message, 'keyboard': [[button_return]]}
+
+
+def admin_save_rp_rating_title(user_message):
+    error_message = input_title_check(user_message)
+    if error_message:
+        button_return = vk_api.new_button('Вернуться к списку',
+                                          {'m_id': 'admin_rp_rating_list', 'args': None}, 'negative')
+        button_try_again = vk_api.new_button('Ввести название снова',
+                                             {'m_id': 'admin_change_rp_rating_title', 'args': None}, 'positive')
+        return {'message': error_message, 'keyboard': [[button_return, button_try_again]]}
+
+    user_info = user_class.get_user(user_message['from_id'])
+    setting = user_class.RpRating().get_item(user_info.item_id)
+    setting.title = user_message['text']
+    setting.save()
+    return admin_rp_rating_info(user_message)
+
+
+def admin_change_rp_rating_description(user_message):
+    user_info = user_class.get_user(user_message['from_id'])
+    user_info.menu_id = 'admin_save_rp_rating_description'
+    user_info.save()
+    message = 'Введите описание'
+    button_return = vk_api.new_button('Вернуться к списку',
+                                      {'m_id': 'admin_rp_rating_list', 'args': None}, 'negative')
+    return {'message': message, 'keyboard': [[button_return]]}
+
+
+def admin_save_rp_rating_description(user_message):
+    error_message = input_description_check(user_message)
+    if error_message:
+        button_return = vk_api.new_button('Вернуться к списку',
+                                          {'m_id': 'admin_rp_rating_list', 'args': None}, 'negative')
+        button_try_again = vk_api.new_button('Ввести описание снова',
+                                             {'m_id': 'admin_change_rp_rating_title', 'args': None}, 'positive')
+        return {'message': error_message, 'keyboard': [[button_return, button_try_again]]}
+
+    user_info = user_class.get_user(user_message['from_id'])
+    setting = user_class.RpRating().get_item(user_info.item_id)
+    setting.description = user_message['text']
+    setting.save()
+    return admin_rp_rating_info(user_message)
+
+
+def admin_delete_rp_rating(user_message):
+    user_info = user_class.get_user(user_message['from_id'])
+    try:
+        setting = user_class.SettingList().get_setting(user_info.item_id).title
+        if user_class.SettingList().delete_setting(user_info.item_id):
+            message = f'Сеттинг "{setting}" успешно удален.'
+        else:
+            message = f'Во время удаления сеттинга произошла ошибка, попробуйте повторить запрос через некоторое время.'
+    except:
+        message = f'Во время удаления сеттинга произошла ошибка, попробуйте повторить запрос через некоторое время.'
+    button_return = vk_api.new_button('Вернуться к списку сеттингов',
+                                      {'m_id': 'admin_setting_list', 'args': None}, 'primary')
+    return {'message': message, 'keyboard': [[button_return]]}
+

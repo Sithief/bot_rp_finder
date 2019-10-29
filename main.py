@@ -12,12 +12,7 @@ from Keys import Keys
 if __name__ == '__main__':
     bot_api = vk_api.Api(Keys().get_group_token(), 'main')
 
-    user_class.User.create_table()
-    user_class.RpProfile.create_table()
-    user_class.RoleOffer.create_table()
-    user_class.SettingList.create_table()
-    user_class.ProfileSettingList.create_table()
-    user_class.Notification.create_table()
+    user_class.init_db()
 
     longpoll_stdout = multiprocessing.Queue()
     longpoll_listner = multiprocessing.Process(target=longpoll.listen, args=(longpoll_stdout,))
