@@ -5,7 +5,7 @@ import os
 class Keys:
     # def __init__(self, keys_filename='keys_private.txt', db_filename='bot_data.db',
     #              bot_data_dir='~\\Documents\\bot_data'):
-    def __init__(self, keys_filename='keys_private.txt', db_filename='bot_data.db',
+    def __init__(self, keys_filename='keys.txt', db_filename='bot_data.db',
                  bot_data_dir='~\\Documents\\bot_data'):
         bot_path = os.path.expanduser(bot_data_dir)
         if not os.path.exists(bot_path):

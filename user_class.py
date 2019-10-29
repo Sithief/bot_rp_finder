@@ -83,6 +83,7 @@ class RoleOffer(peewee.Model):
     from_owner_id = peewee.IntegerField()
     to_profile_id = peewee.IntegerField()
     to_owner_id = peewee.IntegerField()
+    actual = peewee.BooleanField(default=True)
 
     class Meta:
         database = db
@@ -112,22 +113,23 @@ class RoleOffer(peewee.Model):
         except self.DoesNotExist:
             return []
 
-    def is_offer_to_profile(self, user_id, profile_id):
+    def offer_to_profile(self, user_id, profile_id):
         try:
-            user_offers = self.get((RoleOffer.from_owner_id == user_id) &
-                                   (RoleOffer.to_profile_id == profile_id))
-            return True
+            user_offer = self.get((RoleOffer.from_owner_id == user_id) &
+                                  (RoleOffer.to_profile_id == profile_id))
+            return user_offer
         except self.DoesNotExist:
             return False
 
-    def delete_offer(self, from_owner_id, to_profile_id):
+    def get_offers_to_profile_owner(self, user_id, profile_id):
         try:
-            delete_profile = self.delete().where((RoleOffer.from_owner_id == from_owner_id) &
-                                                 (RoleOffer.to_profile_id == to_profile_id))
-            delete_profile.execute()
-            return True
-        except RpProfile.DoesNotExist:
-            return False
+            owner_id = get_rp_profile(profile_id).owner_id
+            user_offers = self.select().where((RoleOffer.from_owner_id == user_id) &
+                                              (RoleOffer.to_owner_id == owner_id))
+            return user_offers
+        except self.DoesNotExist:
+            return []
+
 
 
 class SettingList(peewee.Model):
@@ -399,7 +401,7 @@ if __name__ == "__main__":
     migrator = playhouse_migrate.SqliteMigrator(db)
 
     playhouse_migrate.migrate(
-        # migrator.add_column('ProfileSettingList', 'is_allowed', ProfileSettingList.is_allowed),
-        migrator.rename_column('ProfileRpRatingList', 'rp_rating_id', 'item_id'),
+        # migrator.add_column('RoleOffer', 'is_actual', RoleOffer.is_actual),
+        migrator.rename_column('RoleOffer', 'is_actual', 'actual'),
         # migrator.drop_column('story', 'some_old_field')
     )
