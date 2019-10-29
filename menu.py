@@ -296,16 +296,21 @@ def change_setting_list(user_message):
     profile_id = user_info.item_id
     setting = user_class.SettingList().get_setting_list()
     user_setting = user_class.ProfileSettingList().get_setting_list(profile_id)
+    user_setting_list = {i.setting_id: i for i in user_setting}
 
     message = 'Выберите подходящие сеттинги для игры:\n' \
               '• Первое нажатие добавляет в список\n' \
-              '• Второе - убирает из списка'
+              '• Второе переносит в список исключений\n' \
+              '• третье - убирает из списков'
 
     if user_message['payload']['args']:
-        if user_message['payload']['args']['setting_id'] in [i.setting_id for i in user_setting]:
-            user_class.ProfileSettingList().delete_setting_from_list(user_message['payload']['args']['profile_id'],
-                                                                     user_message['payload']['args']['setting_id'])
-
+        if user_message['payload']['args']['setting_id'] in user_setting_list:
+            if user_setting_list[user_message['payload']['args']['setting_id']].is_allowed:
+                user_setting_list[user_message['payload']['args']['setting_id']].is_allowed = False
+                user_setting_list[user_message['payload']['args']['setting_id']].save()
+            else:
+                user_class.ProfileSettingList().delete_setting_from_list(user_message['payload']['args']['profile_id'],
+                                                                         user_message['payload']['args']['setting_id'])
         else:
             user_class.ProfileSettingList().add_setting(user_message['payload']['args']['profile_id'],
                                                         user_message['payload']['args']['setting_id'])
@@ -314,16 +319,19 @@ def change_setting_list(user_message):
                        f'Вы добавили сеттинг: "{setting_info.title}"\n' \
                        f'Его описание: {setting_info.description}'
         user_setting = user_class.ProfileSettingList().get_setting_list(profile_id)
+        user_setting_list = {i.setting_id: i for i in user_setting}
 
     setting_btn = list()
-    user_setting_ids = [i.setting_id for i in user_setting]
     for stt in setting:
         color = 'default'
-        if stt.id in user_setting_ids:
-            color = 'positive'
+        if stt.id in user_setting_list:
+            if user_setting_list[stt.id].is_allowed:
+                color = 'positive'
+            else:
+                color = 'negative'
         setting_btn.append(vk_api.new_button(stt.title, {'m_id': 'change_setting_list',
                                                          'args': {'setting_id': stt.id,
-                                                                       'profile_id': profile_id}}, color))
+                                                                  'profile_id': profile_id}}, color))
 
     button_return = vk_api.new_button('Вернуться к анкете',
                                       {'m_id': 'change_profile', 'args': None}, 'primary')
@@ -714,9 +722,6 @@ def admin_delete_setting(user_message):
     button_return = vk_api.new_button('Вернуться к списку сеттингов',
                                       {'m_id': 'admin_setting_list', 'args': None}, 'primary')
     return {'message': message, 'keyboard': [[button_return]]}
-
-
-# TODO
 
 
 def admin_create_rp_rating(user_message):
