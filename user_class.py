@@ -226,7 +226,7 @@ class RpRating(peewee.Model):
         except self.DoesNotExist:
             return []
 
-    def get_items_list(self):
+    def get_item_list(self):
         try:
             rp_ratings = self.select()
             return rp_ratings
@@ -246,35 +246,35 @@ class RpRating(peewee.Model):
 
 class ProfileRpRatingList(peewee.Model):
     profile_id = peewee.IntegerField()
-    rp_rating_id = peewee.IntegerField()
+    item_id = peewee.IntegerField()
     is_allowed = peewee.BooleanField(default=True)
 
     class Meta:
         database = db
-        primary_key = peewee.CompositeKey('profile_id', 'rp_rating_id')
+        primary_key = peewee.CompositeKey('profile_id', 'item_id')
 
-    def add_rp_rating(self, profile_id, rp_rating_id):
+    def add_item(self, profile_id, item_id):
         try:
-            added_rp_rating = self.create(profile_id=profile_id,
-                                          rp_rating_id=rp_rating_id)
-            return added_rp_rating
+            added_item = self.create(profile_id=profile_id,
+                                     item_id=item_id)
+            return added_item
         except:
             return False
 
-    def get_rp_rating_list(self, profile_id):
+    def get_item_list(self, profile_id):
         try:
-            rp_rating_list = self.select(ProfileRpRatingList, RpRating)\
-                                 .where(ProfileRpRatingList.profile_id == profile_id)\
-                                 .join(RpRating, on=(ProfileRpRatingList.rp_rating_id == RpRating.id).alias('setting'))
-            return rp_rating_list
+            item_list = self.select(ProfileRpRatingList, RpRating)\
+                            .where(ProfileRpRatingList.profile_id == profile_id)\
+                            .join(RpRating, on=(ProfileRpRatingList.item_id == RpRating.id).alias('item'))
+            return item_list
         except self.DoesNotExist:
             return []
 
-    def delete_setting_from_list(self, profile_id, rp_rating_id):
+    def delete_item_from_list(self, profile_id, item_id):
         try:
-            delete_rp_rating = self.delete().where((ProfileRpRatingList.profile_id == profile_id) &
-                                                   (ProfileRpRatingList.rp_rating_id == rp_rating_id))
-            delete_rp_rating.execute()
+            delete_item = self.delete().where((ProfileRpRatingList.profile_id == profile_id) &
+                                              (ProfileRpRatingList.item_id == item_id))
+            delete_item.execute()
             return True
         except self.DoesNotExist:
             return False
@@ -368,5 +368,7 @@ if __name__ == "__main__":
     migrator = playhouse_migrate.SqliteMigrator(db)
 
     playhouse_migrate.migrate(
-        migrator.add_column('ProfileSettingList', 'is_allowed', ProfileSettingList.is_allowed),
+        # migrator.add_column('ProfileSettingList', 'is_allowed', ProfileSettingList.is_allowed),
+        migrator.rename_column('ProfileRpRatingList', 'rp_rating_id', 'item_id'),
+        # migrator.drop_column('story', 'some_old_field')
     )
