@@ -1,10 +1,12 @@
 import json
 import time
-import vk_api
-import user_class
-import text_extension as t_ext
+from bot_rp_finder.vk_api import vk_api
+from bot_rp_finder.database import user_class
+from bot_rp_finder.menu import text_extension as t_ext
+
 
 genders = ['Мужской', 'Женский', 'Не указано']
+# TODO сделать сортировку уведомлений по дате, разделение на страницы и ограничение количества уведомлений на человека
 
 
 def menu_hub(user_message):
@@ -813,7 +815,7 @@ def admin_rp_rating_list(user_message):
 
     message = 'Список доступных рейтингов ролевых.\n' \
               'Выберите тот, который хотите изменить или удалить.'
-    items = user_class.RpRating().get_items_list()
+    items = user_class.RpRating().get_item_list()
 
     items_btn = list()
     for rpr in items:

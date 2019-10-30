@@ -1,12 +1,13 @@
-import requests
 import time
 import multiprocessing
-import menu
-import longpoll
-import vk_api
-import user_class
-import os
-from Keys import Keys
+import logging
+from bot_rp_finder.menu import menu
+from bot_rp_finder.vk_api import vk_api, longpoll
+from bot_rp_finder.vk_api.Keys import Keys
+from bot_rp_finder.database import user_class
+
+logging.basicConfig(format='%(filename)-15s[LINE:%(lineno)d]# %(levelname)-8s [%(asctime)s]  %(message)s',
+                    level=logging.INFO)
 
 
 if __name__ == '__main__':

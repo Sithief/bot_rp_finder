@@ -3,7 +3,7 @@ import time
 import random
 import os
 import json
-import text_extension as t_ext
+import logging
 
 
 class Api(object):
@@ -13,24 +13,24 @@ class Api(object):
         self.name = name
         self.version = version
         self.VK_API = requests.Session()
-        self.log_write('%s gApi started' % self.name)
+        logging.info(f'{self.name} gApi started')
 
-    def log_write(self, log_text):
-        log_time = time.localtime(time.time())
-        log_text = '%02d.%02d.%02d %02d:%02d:%02d | %s\n' % (log_time.tm_mday,
-                                                             log_time.tm_mon,
-                                                             log_time.tm_year % 100,
-                                                             log_time.tm_hour,
-                                                             log_time.tm_min,
-                                                             log_time.tm_sec,
-                                                             log_text)
-        print(log_text)
-        try:
-            file_path = os.path.dirname(os.path.realpath(__file__)) + '/log/' + self.name + '_log.txt'
-            with open(file_path, 'a', encoding='utf-8') as log_file:
-                log_file.write(log_text)
-        except Exception as e:
-            print("Can't write log to file!", str(e))
+    # def log_write(self, log_text):
+    #     log_time = time.localtime(time.time())
+    #     log_text = '%02d.%02d.%02d %02d:%02d:%02d | %s\n' % (log_time.tm_mday,
+    #                                                          log_time.tm_mon,
+    #                                                          log_time.tm_year % 100,
+    #                                                          log_time.tm_hour,
+    #                                                          log_time.tm_min,
+    #                                                          log_time.tm_sec,
+    #                                                          log_text)
+    #     print(log_text)
+    #     try:
+    #         file_path = os.path.dirname(os.path.realpath(__file__)) + '/log/' + self.name + '_log.txt'
+    #         with open(file_path, 'a', encoding='utf-8') as log_file:
+    #             log_file.write(log_text)
+    #     except Exception as e:
+    #         print("Can't write log to file!", str(e))
 
     def request_get(self, method, parameters=None):
         if not parameters:
@@ -47,17 +47,17 @@ class Api(object):
                     return self.request_get(method, parameters)
                 return request.json()
             else:
-                self.log_write('request.status_code = ' + str(request.status_code))
+                logging.error(f'request.status_code = {request.status_code}')
                 time.sleep(5)
                 return self.request_get(method, parameters)
 
-        except requests.exceptions.RequestException as e:
-            self.log_write('connection problems: ' + str(e))
+        except requests.exceptions.RequestException as error_msg:
+            logging.error(f'connection problems {error_msg}')
             time.sleep(5)
             return self.request_get(method, parameters)
 
-        except Exception as e:
-            self.log_write('request.get: ' + str(e))
+        except Exception as error_msg:
+            logging.error(f'{error_msg}')
             return {}
 
     def msg_send(self, peer_id, payload):
@@ -68,7 +68,7 @@ class Api(object):
         if type(payload.get('keyboard', '')) != str:
             payload['keyboard'] = keyboard_from_buttons(payload['keyboard'])
         msg = self.request_get('messages.send', payload)
-        self.log_write(str(msg))
+        logging.info(f'send message {msg}')
         if 'response' in msg:
             return msg['response']
         else:
@@ -77,14 +77,14 @@ class Api(object):
     def msg_get(self, message_id):
         msg_info = self.request_get('messages.getById', {'message_ids': message_id})
         if 'response' not in msg_info:
-            self.log_write('msg_info: ' + str(msg_info))
+            logging.error(f'get message error {msg_info}')
             return {}
         return msg_info['response']['items'][0]
 
     def get_user_info(self, user_id):
         user_info = self.request_get('users.get', {'user_ids': user_id, 'fields': 'sex'})
         if 'response' not in user_info:
-            self.log_write('get_user_info: ' + str(user_info))
+            logging.error(f'get user error {user_info}')
             return {}
         return user_info['response'][0]
 
@@ -92,14 +92,14 @@ class Api(object):
         group_info = self.request_get('groups.getById', {'group_id': group_id,
                                                          'fields': 'age_limits,has_photo,links,members_count'})
         if 'response' not in group_info:
-            self.log_write('get_user_info: ' + str(group_info))
+            logging.error(f'get group error {group_info}')
             return {}
         return group_info['response'][0]
 
     def upload_photo(self, peer_id, filename):
         upload_server = self.request_get('photos.getMessagesUploadServer', {'peer_id': peer_id})
         if 'response' not in upload_server:
-            self.log_write('upload_server: ' + str(upload_server))
+            logging.error(f'get upload server error {upload_server}')
             return {}
 
         url = upload_server['response']['upload_url']
@@ -110,7 +110,7 @@ class Api(object):
                                                                      'server': uploading_file['server'],
                                                                      'hash': uploading_file['hash']})
         if 'response' not in saving_photo:
-            self.log_write('saving_photo: ' + str(saving_photo))
+            logging.error(f'get saving photo error {saving_photo}')
             return {}
         print('saved photo:', saving_photo['response'][0])
         return ['photo%s_%s_%s' % (saving_photo['response'][0]['owner_id'],
@@ -137,7 +137,7 @@ class Api(object):
                     return msg_count;''' % peer_id
         msg_count = self.request_get('execute', {'code': script})
         if 'response' not in msg_count:
-            self.log_write('msg_count: ' + str(msg_count))
+            logging.error(f'msg count error {msg_count}')
             return 100
         return msg_count['response']
 
@@ -394,7 +394,7 @@ class KeyConstruct(object):
         return self
 
     def four_buttons(self, label1, label2, label3, label4,
-                      color1='default', color2='default', color3='default', color4='default'):
+                     color1='default', color2='default', color3='default', color4='default'):
         self.__keyboard['buttons'].append([{'action': {'type': 'text',
                                                        'payload': '{\"button\": \"1\"}',
                                                        'label': label1},

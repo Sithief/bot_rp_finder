@@ -1,4 +1,4 @@
-from Keys import Keys
+from bot_rp_finder.vk_api.Keys import Keys
 
 
 def gender_msg(male_text, female_text, is_female):
