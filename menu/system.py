@@ -96,3 +96,12 @@ def rp_profile_display(profile_id):
     profile['message'] += f'Описание: {rp_profile.description}\n'
     profile['attachment'] = ','.join(json.loads(rp_profile.arts))
     return profile
+
+
+def empty_func(user_message):
+    user_info = user_class.get_user(user_message['from_id'])
+    message = 'Этого меню еще нет, но раз вы сюда пришли, вот вам монетка!'
+    user_info.money += 1
+    user_info.save()
+    button_1 = vk_api.new_button('Главное меню', {'m_id': 'main', 'args': None}, 'primary')
+    return {'message': message, 'keyboard': [[button_1]]}
