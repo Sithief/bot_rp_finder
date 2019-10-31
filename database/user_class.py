@@ -1,4 +1,5 @@
 import peewee
+import logging
 from bot_rp_finder.vk_api.Keys import Keys
 
 db_filename = Keys().get_db_filename()
@@ -129,6 +130,44 @@ class RoleOffer(peewee.Model):
         except self.DoesNotExist:
             return []
 
+
+class AdditionalField(peewee.Model):
+    id = peewee.IntegerField(primary_key=True)
+    title = peewee.CharField(default='Не указано')
+    description = peewee.CharField(default='Не указано')
+
+    class Meta:
+        database = db
+
+    def create_field(self):
+        try:
+            new_field = self.create()
+            return new_field
+        except Exception as error_message:
+            logging.error(f'{error_message}')
+            return False
+
+    def get_field(self, field_id):
+        try:
+            field = self.get(self._schema.model.id == field_id)
+            return field
+        except self.DoesNotExist:
+            return []
+
+    def get_field_list(self):
+        try:
+            fields = self.select()
+            return fields
+        except self.DoesNotExist:
+            return []
+
+    def delete_field(self, field_id):
+        try:
+            deleteng_field = self.delete().where(self._schema.model.id == field_id)
+            deleteng_field.execute()
+            return True
+        except self.DoesNotExist:
+            return False
 
 
 class SettingList(peewee.Model):
@@ -396,11 +435,26 @@ def init_db():
 
 
 if __name__ == "__main__":
-    import playhouse.migrate as playhouse_migrate
-    migrator = playhouse_migrate.SqliteMigrator(db)
+    pass
+    # logging.basicConfig(format='%(filename)-15s[LINE:%(lineno)d]# %(levelname)-8s [%(asctime)s]  %(message)s',
+    #                     level=logging.INFO)
+    # TestField.create_table()
+    # for i in range(2):
+    #     af = TestField().create_field()
+    #     af.title = f'test field {i}'
+    #     af.save()
+    # t_f = TestField().get_field_list()
+    # for t in t_f:
+    #     print(f'{t.id} - {t.title}')
+    # t_id = int(input('delete id'))
+    # print(TestField().delete_field(t_id))
 
-    playhouse_migrate.migrate(
-        # migrator.add_column('RoleOffer', 'is_actual', RoleOffer.is_actual),
-        migrator.rename_column('RoleOffer', 'is_actual', 'actual'),
-        # migrator.drop_column('story', 'some_old_field')
-    )
+
+    # import playhouse.migrate as playhouse_migrate
+    # migrator = playhouse_migrate.SqliteMigrator(db)
+    #
+    # playhouse_migrate.migrate(
+    #     migrator.add_column('RoleOffer', 'is_actual', RoleOffer.is_actual),
+    #     migrator.rename_column('RoleOffer', 'is_actual', 'actual'),
+    #     migrator.drop_column('story', 'some_old_field')
+    # )
