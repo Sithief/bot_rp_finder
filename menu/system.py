@@ -108,6 +108,8 @@ def empty_func(user_message):
 
 
 class InputText:
+    status = True
+
     def __init__(self, user_id, next_menu, prew_menu):
         self.user_id = user_id
         self.user_info = user_class.get_user(user_id)
@@ -121,15 +123,27 @@ class InputText:
         return {'message': message, 'keyboard': [[button_return]]}
 
     def save_text(self, user_message, check_function):
+        self.status = True
         error_message = check_function(user_message)
         if error_message:
             button_return = vk_api.new_button('Назад', {'m_id': self.prew_menu, 'args': None}, 'negative')
             button_try_again = vk_api.new_button('Ввести снова', {'m_id': self.next_menu, 'args': None}, 'positive')
-            return False, {'message': error_message, 'keyboard': [[button_return, button_try_again]]}
-        return True, {'item_id': self.user_info.item_id, 'text': user_message['text']}
+            self.status = False
+            return {'message': error_message, 'keyboard': [[button_return, button_try_again]]}
+        return {'item_id': self.user_info.item_id, 'text': user_message['text']}
 
-    def save_title(self, user_message):
-        return self.save_text(user_message, input_title_check)
+    def save_title(self, user_message, table_class):
+        data = self.save_text(user_message, input_title_check)
+        if self.status:
+            item = table_class.get_item(data['item_id'])
+            item.title = data['text']
+            item.save()
+        return self.status, data
 
-    def save_description(self, user_message):
-        return self.save_text(user_message, input_description_check)
+    def save_description(self, user_message, table_class):
+        data = self.save_text(user_message, input_title_check)
+        if self.status:
+            item = table_class.get_item(data['item_id'])
+            item.description = data['text']
+            item.save()
+        return self.status, data
