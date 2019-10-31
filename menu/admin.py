@@ -87,27 +87,25 @@ def admin_setting_info(user_message):
 
 
 def admin_change_setting_title(user_message):
-    user_info = user_class.get_user(user_message['from_id'])
-    user_info.menu_id = 'admin_save_setting_title'
-    user_info.save()
-    message = 'Введите название сеттинга'
-    button_return = vk_api.new_button('Вернуться к списку сеттингов',
-                                      {'m_id': 'admin_setting_list', 'args': None}, 'negative')
-    return {'message': message, 'keyboard': [[button_return]]}
+    menu = system.InputText(user_message['from_id'], 'admin_save_setting_title', 'admin_setting_list')
+    return menu.change_title('Введите название сеттинга')
+    # user_info = user_class.get_user(user_message['from_id'])
+    # user_info.menu_id = 'admin_save_setting_title'
+    # user_info.save()
+    # message = 'Введите название сеттинга'
+    # button_return = vk_api.new_button('Вернуться к списку сеттингов',
+    #                                   {'m_id': 'admin_setting_list', 'args': None}, 'negative')
+    # return {'message': message, 'keyboard': [[button_return]]}
 
 
 def admin_save_setting_title(user_message):
-    error_message = system.input_title_check(user_message)
-    if error_message:
-        button_return = vk_api.new_button('Вернуться к списку сеттингов',
-                                          {'m_id': 'admin_setting_list', 'args': None}, 'negative')
-        button_try_again = vk_api.new_button('Ввести название снова',
-                                             {'m_id': 'admin_change_setting_title', 'args': None}, 'positive')
-        return {'message': error_message, 'keyboard': [[button_return, button_try_again]]}
+    menu = system.InputText(user_message['from_id'], 'admin_change_setting_title', 'admin_setting_list')
+    status, data = menu.save_title(user_message)
+    if not status:
+        return data
 
-    user_info = user_class.get_user(user_message['from_id'])
-    setting = user_class.SettingList().get_setting(user_info.item_id)
-    setting.title = user_message['text']
+    setting = user_class.SettingList().get_setting(data['item_id'])
+    setting.title = data['text']
     setting.save()
     return admin_setting_info(user_message)
 

@@ -105,3 +105,26 @@ def empty_func(user_message):
     user_info.save()
     button_1 = vk_api.new_button('Главное меню', {'m_id': 'main', 'args': None}, 'primary')
     return {'message': message, 'keyboard': [[button_1]]}
+
+
+class InputText:
+    def __init__(self, user_id, next_menu, prew_menu):
+        self.user_id = user_id
+        self.user_info = user_class.get_user(user_id)
+        self.next_menu = next_menu
+        self.prew_menu = prew_menu
+
+    def change_title(self, message):
+        self.user_info.menu_id = self.next_menu
+        self.user_info.save()
+        button_return = vk_api.new_button('Назад', {'m_id': self.prew_menu, 'args': None}, 'negative')
+        return {'message': message, 'keyboard': [[button_return]]}
+
+    def save_title(self, user_message):
+        error_message = input_title_check(user_message)
+        if error_message:
+            button_return = vk_api.new_button('Назад', {'m_id': self.prew_menu, 'args': None}, 'negative')
+            button_try_again = vk_api.new_button('Ввести снова', {'m_id': self.next_menu, 'args': None}, 'positive')
+            return False, {'message': error_message, 'keyboard': [[button_return, button_try_again]]}
+
+        return True, {'item_id': self.user_info.item_id, 'text': user_message['text']}

@@ -5,6 +5,23 @@ from bot_rp_finder.menu import system, admin, user_profile, search, notification
 # TODO сделать сортировку уведомлений по дате, разделение на страницы и ограничение количества уведомлений на человека
 
 
+# class Menu:
+#     def __init__(self, user_message):
+#         self.msg = user_message
+#
+#     def loads(self):
+#         if 'payload' in self.msg:
+#             payload = self.msg['payload']
+#             if ''
+#             try:
+#                 self.menu_id, self.owner_id, self.item_id = self.msg['payload'][''].split('_')
+#             except ValueError:
+#                 self.params
+#                 self.menu_id, self.owner_id, self.item_id = 'main', 0, 0
+#
+#     def dumps(self):
+
+
 def menu_hub(user_message):
     menus = {'main': main}
     menus.update(admin.get_menus())
