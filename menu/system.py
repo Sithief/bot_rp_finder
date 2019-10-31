@@ -114,17 +114,22 @@ class InputText:
         self.next_menu = next_menu
         self.prew_menu = prew_menu
 
-    def change_title(self, message):
+    def change_text(self, message):
         self.user_info.menu_id = self.next_menu
         self.user_info.save()
         button_return = vk_api.new_button('Назад', {'m_id': self.prew_menu, 'args': None}, 'negative')
         return {'message': message, 'keyboard': [[button_return]]}
 
-    def save_title(self, user_message):
-        error_message = input_title_check(user_message)
+    def save_text(self, user_message, check_function):
+        error_message = check_function(user_message)
         if error_message:
             button_return = vk_api.new_button('Назад', {'m_id': self.prew_menu, 'args': None}, 'negative')
             button_try_again = vk_api.new_button('Ввести снова', {'m_id': self.next_menu, 'args': None}, 'positive')
             return False, {'message': error_message, 'keyboard': [[button_return, button_try_again]]}
-
         return True, {'item_id': self.user_info.item_id, 'text': user_message['text']}
+
+    def save_title(self, user_message):
+        return self.save_text(user_message, input_title_check)
+
+    def save_description(self, user_message):
+        return self.save_text(user_message, input_description_check)
