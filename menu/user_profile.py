@@ -154,7 +154,7 @@ def change_gender(user_message):
 def change_setting_list(user_message):
     user_info = user_class.get_user(user_message['from_id'])
     profile_id = user_info.item_id
-    setting = user_class.SettingList().get_setting_list()
+    setting = user_class.SettingList().get_item_list()
     user_setting = user_class.ProfileSettingList().get_setting_list(profile_id)
     user_setting_list = {i.setting_id: i for i in user_setting}
 
@@ -174,7 +174,7 @@ def change_setting_list(user_message):
         else:
             user_class.ProfileSettingList().add_setting(user_message['payload']['args']['profile_id'],
                                                         user_message['payload']['args']['setting_id'])
-            setting_info = user_class.SettingList().get_setting(user_message['payload']['args']['setting_id'])
+            setting_info = user_class.SettingList().get_item(user_message['payload']['args']['setting_id'])
             message += f'\n\n' \
                        f'Вы добавили сеттинг: "{setting_info.title}"\n' \
                        f'Его описание: {setting_info.description}'

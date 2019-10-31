@@ -36,7 +36,7 @@ def admin_setting_list(user_message):
 
     message = 'Список доступных сеттингов.\n' \
               'Выберите тот, который хотите изменить или удалить.'
-    setting = user_class.SettingList().get_setting_list()
+    setting = user_class.SettingList().get_item_list()
 
     setting_btn = list()
     for stt in setting:
@@ -50,7 +50,7 @@ def admin_setting_list(user_message):
 
 
 def admin_create_setting(user_message):
-    new_setting = user_class.SettingList().create_setting()
+    new_setting = user_class.SettingList().create_item()
     if not new_setting:
         return system.access_error()
     user_info = user_class.get_user(user_message['from_id'])
@@ -69,7 +69,7 @@ def admin_setting_info(user_message):
 
     user_info.menu_id = 'admin_setting_info'
     user_info.save()
-    setting = user_class.SettingList().get_setting(user_info.item_id)
+    setting = user_class.SettingList().get_item(user_info.item_id)
     message = f'Название сеттинга: {setting.title}\n' \
               f'Описание сеттинга: {setting.description}'
     btn_change_title = vk_api.new_button('Изменить название сеттинга',
@@ -97,7 +97,7 @@ def admin_save_setting_title(user_message):
     if not status:
         return data
 
-    setting = user_class.SettingList().get_setting(data['item_id'])
+    setting = user_class.SettingList().get_item(data['item_id'])
     setting.title = data['text']
     setting.save()
     return admin_setting_info(user_message)
@@ -114,7 +114,7 @@ def admin_save_setting_description(user_message):
     if not status:
         return data
 
-    setting = user_class.SettingList().get_setting(data['item_id'])
+    setting = user_class.SettingList().get_item(data['item_id'])
     setting.description = data['text']
     setting.save()
     return admin_setting_info(user_message)
@@ -123,8 +123,8 @@ def admin_save_setting_description(user_message):
 def admin_delete_setting(user_message):
     user_info = user_class.get_user(user_message['from_id'])
     try:
-        setting = user_class.SettingList().get_setting(user_info.item_id).title
-        if user_class.SettingList().delete_setting(user_info.item_id):
+        setting = user_class.SettingList().get_item(user_info.item_id).title
+        if user_class.SettingList().delete_item(user_info.item_id):
             message = f'Сеттинг "{setting}" успешно удален.'
         else:
             message = f'Во время удаления сеттинга произошла ошибка, попробуйте повторить запрос через некоторое время.'
@@ -258,8 +258,8 @@ def admin_save_rp_rating_description(user_message):
 def admin_delete_rp_rating(user_message):
     user_info = user_class.get_user(user_message['from_id'])
     try:
-        setting = user_class.SettingList().get_setting(user_info.item_id).title
-        if user_class.SettingList().delete_setting(user_info.item_id):
+        setting = user_class.SettingList().get_item(user_info.item_id).title
+        if user_class.SettingList().delete_item(user_info.item_id):
             message = f'Сеттинг "{setting}" успешно удален.'
         else:
             message = f'Во время удаления сеттинга произошла ошибка, попробуйте повторить запрос через некоторое время.'

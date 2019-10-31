@@ -139,7 +139,7 @@ class AdditionalField(peewee.Model):
     class Meta:
         database = db
 
-    def create_field(self):
+    def create_item(self):
         try:
             new_field = self.create()
             return new_field
@@ -147,21 +147,21 @@ class AdditionalField(peewee.Model):
             logging.error(f'{error_message}')
             return False
 
-    def get_field(self, field_id):
+    def get_item(self, field_id):
         try:
             field = self.get(self._schema.model.id == field_id)
             return field
         except self.DoesNotExist:
             return []
 
-    def get_field_list(self):
+    def get_item_list(self):
         try:
             fields = self.select()
             return fields
         except self.DoesNotExist:
             return []
 
-    def delete_field(self, field_id):
+    def delete_item(self, field_id):
         try:
             deleteng_field = self.delete().where(self._schema.model.id == field_id)
             deleteng_field.execute()
@@ -170,43 +170,8 @@ class AdditionalField(peewee.Model):
             return False
 
 
-class SettingList(peewee.Model):
-    title = peewee.CharField(default='Не указано')
-    description = peewee.CharField(default='Не указано')
-
-    class Meta:
-        database = db
-
-    def create_setting(self):
-        try:
-            new_setting = self.create()
-            return new_setting
-        except:
-            return False
-
-    def get_setting(self, setting_id):
-        try:
-            settings = self.get(SettingList.id == setting_id)
-            return settings
-        except self.DoesNotExist:
-            return []
-
-    def get_setting_list(self):
-        try:
-            settings = self.select()
-            return settings
-        except self.DoesNotExist:
-            return []
-
-    def delete_setting(self, setting_id):
-        try:
-            delete_relations = ProfileSettingList().delete().where(ProfileSettingList.setting_id == setting_id)
-            delete_relations.execute()
-            deleted_setting = self.delete().where(SettingList.id == setting_id)
-            deleted_setting.execute()
-            return True
-        except self.DoesNotExist:
-            return False
+class SettingList(AdditionalField):
+    pass
 
 
 class ProfileSettingList(peewee.Model):
@@ -245,43 +210,8 @@ class ProfileSettingList(peewee.Model):
             return False
 
 
-class RpRating(peewee.Model):
-    title = peewee.CharField(default='Не указано')
-    description = peewee.CharField(default='Не указано')
-
-    class Meta:
-        database = db
-
-    def create_item(self):
-        try:
-            new_rp_rating = self.create()
-            return new_rp_rating
-        except:
-            return False
-
-    def get_item(self, rp_rating_id):
-        try:
-            rp_rating = self.get(RpRating.id == rp_rating_id)
-            return rp_rating
-        except self.DoesNotExist:
-            return []
-
-    def get_item_list(self):
-        try:
-            rp_ratings = self.select()
-            return rp_ratings
-        except self.DoesNotExist:
-            return []
-
-    def delete_item(self, rp_rating_id):
-        try:
-            delete_relations = ProfileRpRatingList().delete().where(ProfileRpRatingList.rp_rating_id == rp_rating_id)
-            delete_relations.execute()
-            deleted_setting = self.delete().where(RpRating.id == rp_rating_id)
-            deleted_setting.execute()
-            return True
-        except self.DoesNotExist:
-            return False
+class RpRating(AdditionalField):
+    pass
 
 
 class ProfileRpRatingList(peewee.Model):
