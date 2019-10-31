@@ -1,3 +1,4 @@
+import logging
 from bot_rp_finder.vk_api import vk_api
 from bot_rp_finder.database import user_class
 from bot_rp_finder.menu import system
@@ -97,11 +98,9 @@ def admin_save_setting_title(user_message):
     menu = system.InputText(user_id=user_message['from_id'],
                             next_menu='admin_change_setting_title',
                             prew_menu='admin_setting_info')
-    status, data = menu.save_title(user_message=user_message,
-                                   table_class=user_class.SettingList())
-    if not status:
-        return data
-    return admin_setting_info(user_message)
+    return menu.save_title(user_message=user_message,
+                           table_class=user_class.SettingList(),
+                           success_menu=admin_setting_info)
 
 
 def admin_change_setting_description(user_message):
@@ -115,26 +114,16 @@ def admin_save_setting_description(user_message):
     menu = system.InputText(user_id=user_message['from_id'],
                             prew_menu='admin_change_setting_description',
                             next_menu='admin_setting_info')
-    status, data = menu.save_description(user_message=user_message,
-                                         table_class=user_class.SettingList())
-    if not status:
-        return data
-    return admin_setting_info(user_message)
+    return menu.save_description(user_message=user_message,
+                                 table_class=user_class.SettingList(),
+                                 success_menu=admin_setting_info)
 
 
 def admin_delete_setting(user_message):
-    user_info = user_class.get_user(user_message['from_id'])
-    try:
-        setting = user_class.SettingList().get_item(user_info.item_id).title
-        if user_class.SettingList().delete_item(user_info.item_id):
-            message = f'Сеттинг "{setting}" успешно удален.'
-        else:
-            message = f'Во время удаления сеттинга произошла ошибка, попробуйте повторить запрос через некоторое время.'
-    except:
-        message = f'Во время удаления сеттинга произошла ошибка, попробуйте повторить запрос через некоторое время.'
-    button_return = vk_api.new_button('Вернуться к списку сеттингов',
-                                      {'m_id': 'admin_setting_list', 'args': None}, 'primary')
-    return {'message': message, 'keyboard': [[button_return]]}
+    menu = system.ItemMenu(user_id=user_message['from_id'],
+                           table_class=user_class.SettingList(),
+                           prew_menu='admin_setting_list')
+    return menu.delete_item()
 
 
 def admin_create_rp_rating(user_message):
@@ -216,11 +205,9 @@ def admin_save_rp_rating_title(user_message):
     menu = system.InputText(user_id=user_message['from_id'],
                             next_menu='admin_change_rp_rating_title',
                             prew_menu='admin_rp_rating_info')
-    status, data = menu.save_title(user_message=user_message,
-                                   table_class=user_class.RpRating())
-    if not status:
-        return data
-    return admin_rp_rating_info(user_message)
+    return menu.save_title(user_message=user_message,
+                           table_class=user_class.RpRating(),
+                           success_menu=admin_rp_rating_info)
 
 
 def admin_change_rp_rating_description(user_message):
@@ -234,75 +221,14 @@ def admin_save_rp_rating_description(user_message):
     menu = system.InputText(user_id=user_message['from_id'],
                             prew_menu='admin_change_rp_rating_description',
                             next_menu='admin_rp_rating_info')
-    status, data = menu.save_description(user_message=user_message,
-                                         table_class=user_class.RpRating())
-    if not status:
-        return data
-    return admin_rp_rating_info(user_message)
-
-# def admin_change_rp_rating_title(user_message):
-#     user_info = user_class.get_user(user_message['from_id'])
-#     user_info.menu_id = 'admin_save_rp_rating_title'
-#     user_info.save()
-#     message = 'Введите название'
-#     button_return = vk_api.new_button('Вернуться к списку',
-#                                       {'m_id': 'admin_rp_rating_list', 'args': None}, 'negative')
-#     return {'message': message, 'keyboard': [[button_return]]}
-#
-#
-# def admin_save_rp_rating_title(user_message):
-#     error_message = system.input_title_check(user_message)
-#     if error_message:
-#         button_return = vk_api.new_button('Вернуться к списку',
-#                                           {'m_id': 'admin_rp_rating_list', 'args': None}, 'negative')
-#         button_try_again = vk_api.new_button('Ввести название снова',
-#                                              {'m_id': 'admin_change_rp_rating_title', 'args': None}, 'positive')
-#         return {'message': error_message, 'keyboard': [[button_return, button_try_again]]}
-#
-#     user_info = user_class.get_user(user_message['from_id'])
-#     setting = user_class.RpRating().get_item(user_info.item_id)
-#     setting.title = user_message['text']
-#     setting.save()
-#     return admin_rp_rating_info(user_message)
-#
-#
-# def admin_change_rp_rating_description(user_message):
-#     user_info = user_class.get_user(user_message['from_id'])
-#     user_info.menu_id = 'admin_save_rp_rating_description'
-#     user_info.save()
-#     message = 'Введите описание'
-#     button_return = vk_api.new_button('Вернуться к списку',
-#                                       {'m_id': 'admin_rp_rating_list', 'args': None}, 'negative')
-#     return {'message': message, 'keyboard': [[button_return]]}
-#
-#
-# def admin_save_rp_rating_description(user_message):
-#     error_message = system.input_description_check(user_message)
-#     if error_message:
-#         button_return = vk_api.new_button('Вернуться к списку',
-#                                           {'m_id': 'admin_rp_rating_list', 'args': None}, 'negative')
-#         button_try_again = vk_api.new_button('Ввести описание снова',
-#                                              {'m_id': 'admin_change_rp_rating_title', 'args': None}, 'positive')
-#         return {'message': error_message, 'keyboard': [[button_return, button_try_again]]}
-#
-#     user_info = user_class.get_user(user_message['from_id'])
-#     setting = user_class.RpRating().get_item(user_info.item_id)
-#     setting.description = user_message['text']
-#     setting.save()
-#     return admin_rp_rating_info(user_message)
+    return menu.save_description(user_message=user_message,
+                                 table_class=user_class.RpRating(),
+                                 success_menu=admin_rp_rating_info)
 
 
 def admin_delete_rp_rating(user_message):
-    user_info = user_class.get_user(user_message['from_id'])
-    try:
-        setting = user_class.SettingList().get_item(user_info.item_id).title
-        if user_class.SettingList().delete_item(user_info.item_id):
-            message = f'Сеттинг "{setting}" успешно удален.'
-        else:
-            message = f'Во время удаления сеттинга произошла ошибка, попробуйте повторить запрос через некоторое время.'
-    except:
-        message = f'Во время удаления сеттинга произошла ошибка, попробуйте повторить запрос через некоторое время.'
-    button_return = vk_api.new_button('Вернуться к списку сеттингов',
-                                      {'m_id': 'admin_setting_list', 'args': None}, 'primary')
-    return {'message': message, 'keyboard': [[button_return]]}
+    menu = system.ItemMenu(user_id=user_message['from_id'],
+                           table_class=user_class.RpRating(),
+                           prew_menu='admin_rp_rating_list')
+    return menu.delete_item()
 

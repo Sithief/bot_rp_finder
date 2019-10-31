@@ -1,4 +1,5 @@
 import json
+import logging
 from bot_rp_finder.vk_api import vk_api
 from bot_rp_finder.database import user_class
 
@@ -132,18 +133,40 @@ class InputText:
             return {'message': error_message, 'keyboard': [[button_return, button_try_again]]}
         return {'item_id': self.user_info.item_id, 'text': user_message['text']}
 
-    def save_title(self, user_message, table_class):
-        data = self.save_text(user_message, input_title_check)
+    def save_title(self, user_message, table_class, success_menu):
+        data = self.save_text(user_message, check_function=input_title_check)
         if self.status:
             item = table_class.get_item(data['item_id'])
             item.title = data['text']
             item.save()
-        return self.status, data
+            return success_menu(user_message)
+        return data
 
-    def save_description(self, user_message, table_class):
-        data = self.save_text(user_message, input_title_check)
+    def save_description(self, user_message, table_class, success_menu):
+        data = self.save_text(user_message, check_function=input_description_check)
         if self.status:
             item = table_class.get_item(data['item_id'])
             item.description = data['text']
             item.save()
-        return self.status, data
+            return success_menu(user_message)
+        return data
+
+
+class ItemMenu:
+    def __init__(self, user_id, table_class, prew_menu):
+        self.user_info = user_class.get_user(user_id)
+        self.table_class = table_class
+        self.prew_menu = prew_menu
+
+    def delete_item(self):
+        try:
+            item_title = self.table_class.get_item(self.user_info.item_id).title
+            if self.table_class.delete_item(self.user_info.item_id):
+                message = f'Объект "{item_title}" успешно удален.'
+            else:
+                message = f'Во время удаления произошла ошибка, попробуйте повторить запрос через некоторое время.'
+        except Exception as error_message:
+            logging.error(f'{error_message}')
+            message = f'Во время удаления произошла ошибка, попробуйте повторить запрос через некоторое время.'
+        button_return = vk_api.new_button('Назад', {'m_id': self.prew_menu, 'args': None}, 'primary')
+        return {'message': message, 'keyboard': [[button_return]]}
