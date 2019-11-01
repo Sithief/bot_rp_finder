@@ -5,30 +5,13 @@ from bot_rp_finder.menu import system, admin, user_profile, search, notification
 # TODO сделать сортировку уведомлений по дате, разделение на страницы и ограничение количества уведомлений на человека
 
 
-# class Menu:
-#     def __init__(self, user_message):
-#         self.msg = user_message
-#
-#     def loads(self):
-#         if 'payload' in self.msg:
-#             payload = self.msg['payload']
-#             if ''
-#             try:
-#                 self.menu_id, self.owner_id, self.item_id = self.msg['payload'][''].split('_')
-#             except ValueError:
-#                 self.params
-#                 self.menu_id, self.owner_id, self.item_id = 'main', 0, 0
-#
-#     def dumps(self):
-
-
 def menu_hub(user_message):
     menus = {'main': main}
-    menus.update(admin.get_menus())
     menus.update(system.get_menus())
     menus.update(user_profile.get_menus())
     menus.update(search.get_menus())
     menus.update(notification.get_menus())
+    menus.update(admin.get_menus())
 
     if 'payload' in user_message:
         if 'm_id' in user_message['payload'] and user_message['payload']['m_id'] in menus:
@@ -54,9 +37,9 @@ def main(user_message):
     button_admin_setting = []
     button_admin_rp_rating = []
     if user_info.is_admin:
-        button_admin_setting = [vk_api.new_button('Настройки списка сеттингов', {'m_id': 'admin_setting_list'})]
+        button_admin_setting = [vk_api.new_button('Настройки списка сеттингов', {'m_id': 'setting_item_list'})]
         button_admin_rp_rating = [vk_api.new_button('Настройки списка рейтингов ролевой',
-                                                    {'m_id': 'admin_rp_rating_list'})]
+                                                    {'m_id': 'rp_rating_item_list'})]
 
     notifications_list = user_class.get_user_notifications(user_message['from_id'])
     notification_count = len([i for i in notifications_list if not i.is_read])
