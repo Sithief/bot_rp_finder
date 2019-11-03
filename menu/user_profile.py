@@ -1,4 +1,5 @@
 import json
+import logging
 from bot_rp_finder.vk_api import vk_api
 from bot_rp_finder.database import user_class
 from bot_rp_finder.menu import system
@@ -68,10 +69,10 @@ def change_profile(user_message):
     user_info = user_class.get_user(user_message['from_id'])
 
     try:
-        message = system.rp_profile_display(user_message['payload']['args']['profile_id'])
         user_info.item_id = user_message['payload']['args']['profile_id']
-    except:
-        message = system.rp_profile_display(user_info.item_id)
+    except Exception as error_msg:
+        logging.error(str(error_msg))
+    message = system.rp_profile_display(user_info.item_id)
 
     user_info.menu_id = 'change_profile'
     user_info.save()
@@ -155,8 +156,8 @@ def change_setting_list(user_message):
     user_info = user_class.get_user(user_message['from_id'])
     profile_id = user_info.item_id
     setting = user_class.SettingList().get_item_list()
-    user_setting = user_class.ProfileSettingList().get_setting_list(profile_id)
-    user_setting_list = {i.setting_id: i for i in user_setting}
+    user_setting = user_class.ProfileSettingList().get_list(profile_id)
+    user_setting_list = {i.item.id: i for i in user_setting}
 
     message = 'Выберите подходящие сеттинги для игры:\n' \
               '• Первое нажатие добавляет в список\n' \
@@ -169,17 +170,17 @@ def change_setting_list(user_message):
                 user_setting_list[user_message['payload']['args']['setting_id']].is_allowed = False
                 user_setting_list[user_message['payload']['args']['setting_id']].save()
             else:
-                user_class.ProfileSettingList().delete_setting_from_list(user_message['payload']['args']['profile_id'],
-                                                                         user_message['payload']['args']['setting_id'])
+                user_class.ProfileSettingList().delete_from_list(user_message['payload']['args']['profile_id'],
+                                                                 user_message['payload']['args']['setting_id'])
         else:
-            user_class.ProfileSettingList().add_setting(user_message['payload']['args']['profile_id'],
-                                                        user_message['payload']['args']['setting_id'])
+            user_class.ProfileSettingList().add(user_message['payload']['args']['profile_id'],
+                                                user_message['payload']['args']['setting_id'])
             setting_info = user_class.SettingList().get_item(user_message['payload']['args']['setting_id'])
             message += f'\n\n' \
                        f'Вы добавили сеттинг: "{setting_info.title}"\n' \
                        f'Его описание: {setting_info.description}'
-        user_setting = user_class.ProfileSettingList().get_setting_list(profile_id)
-        user_setting_list = {i.setting_id: i for i in user_setting}
+        user_setting = user_class.ProfileSettingList().get_list(profile_id)
+        user_setting_list = {i.item_id: i for i in user_setting}
 
     setting_btn = list()
     for stt in setting:
@@ -202,8 +203,8 @@ def change_rp_rating_list(user_message):
     user_info = user_class.get_user(user_message['from_id'])
     profile_id = user_info.item_id
     item_list = user_class.RpRating().get_item_list()
-    user_item_list = user_class.ProfileRpRatingList().get_item_list(profile_id)
-    user_item_dict = {i.item_id: i for i in user_item_list}
+    user_item_list = user_class.ProfileRpRatingList().get_list(profile_id)
+    user_item_dict = {i.item.id: i for i in user_item_list}
 
     message = 'Выберите подходящие сеттинги для игры:\n' \
               '• Первое нажатие добавляет в список\n' \
@@ -218,14 +219,14 @@ def change_rp_rating_list(user_message):
                 user_item_dict[item_id].is_allowed = False
                 user_item_dict[item_id].save()
             else:
-                user_class.ProfileRpRatingList().delete_item_from_list(profile_id, item_id)
+                user_class.ProfileRpRatingList().delete_from_list(profile_id, item_id)
         else:
-            user_class.ProfileRpRatingList().add_item(profile_id, item_id)
+            user_class.ProfileRpRatingList().add(profile_id, item_id)
             item_info = user_class.RpRating().get_item(item_id)
             message += f'\n\n' \
                        f'Вы добавили рейтинг: "{item_info.title}"\n' \
                        f'Его описание: {item_info.description}'
-        user_item_list = user_class.ProfileRpRatingList().get_item_list(profile_id)
+        user_item_list = user_class.ProfileRpRatingList().get_list(profile_id)
         user_item_dict = {i.item_id: i for i in user_item_list}
 
     item_btn = list()

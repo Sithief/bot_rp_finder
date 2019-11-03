@@ -78,7 +78,7 @@ def rp_profile_display(profile_id):
     if rp_profile.gender != 'Не указано':
         profile['message'] += f'Пол: {rp_profile.gender}\n'
 
-    user_rating_list = user_class.ProfileRpRatingList().get_item_list(profile_id)
+    user_rating_list = user_class.ProfileRpRatingList().get_list(profile_id)
     user_want_rating_list = [i.item.title for i in user_rating_list if i.is_allowed]
     user_unwant_rating_list = [i.item.title for i in user_rating_list if not i.is_allowed]
     if user_want_rating_list:
@@ -86,9 +86,11 @@ def rp_profile_display(profile_id):
     if user_unwant_rating_list:
         profile['message'] += f'Нежелательный рейтинг: {", ".join(user_unwant_rating_list)}\n'
 
-    user_setting_list = user_class.ProfileSettingList().get_setting_list(profile_id)
-    user_want_setting_list = [i.setting.title for i in user_setting_list if i.is_allowed]
-    user_unwant_setting_list = [i.setting.title for i in user_setting_list if not i.is_allowed]
+    user_setting_list = user_class.ProfileSettingList().get_list(profile_id)
+    user_want_setting_list = [i.item.title for i in user_setting_list if i.is_allowed]
+    user_unwant_setting_list = [i.item.title for i in user_setting_list if not i.is_allowed]
+    # user_want_setting_list = [i.title for i in user_setting_list if i.is_allowed]
+    # user_unwant_setting_list = [i.title for i in user_setting_list if not i.is_allowed]
     if user_want_setting_list:
         profile['message'] += f'Желательный сеттинг: {", ".join(user_want_setting_list)}\n'
     if user_unwant_setting_list:

@@ -24,6 +24,13 @@ class User(peewee.Model):
     class Meta:
         database = db
 
+    def get_user(self, user_id):
+        try:
+            user = self.get(self._schema.model.id == user_id)
+            return user
+        except self.DoesNotExist:
+            return False
+
 
 def create_user(user_id, name, is_fem):
     new_user = User.create(id=user_id, name=name, is_fem=is_fem)
@@ -47,6 +54,13 @@ class RpProfile(peewee.Model):
 
     class Meta:
         database = db
+
+    def get_profile(self, profile_id):
+        try:
+            rp_profile = self.get(self._schema.model.id == profile_id)
+            return rp_profile
+        except self.DoesNotExist:
+            return False
 
 
 def get_user_profiles(owner_id):
@@ -132,7 +146,6 @@ class RoleOffer(peewee.Model):
 
 
 class AdditionalField(peewee.Model):
-    id = peewee.IntegerField(primary_key=True)
     title = peewee.CharField(default='Не указано')
     description = peewee.CharField(default='Не указано')
 
@@ -170,84 +183,61 @@ class AdditionalField(peewee.Model):
             return False
 
 
-class SettingList(AdditionalField):
-    pass
+class ProfileAdditionalField(peewee.Model):
+    profile_field = RpProfile
+    additional_field = AdditionalField
 
-
-class ProfileSettingList(peewee.Model):
-    profile_id = peewee.IntegerField()
-    setting_id = peewee.IntegerField()
+    profile = peewee.ForeignKeyField(profile_field, on_delete='cascade')
+    item = peewee.ForeignKeyField(additional_field, on_delete='cascade')
     is_allowed = peewee.BooleanField(default=True)
 
     class Meta:
         database = db
-        primary_key = peewee.CompositeKey('profile_id', 'setting_id')
+        primary_key = peewee.CompositeKey('profile', 'item')
 
-    def add_setting(self, profile_id, setting_id):
+    def add(self, profile_id, item_id):
         try:
-            added_setting = self.create(profile_id=profile_id,
-                                        setting_id=setting_id)
-            return added_setting
-        except:
+            profile = self.profile_field().get_profile(profile_id)
+            item = self.additional_field().get_item(item_id)
+            added_item = self.create(profile=profile, item=item)
+            return added_item
+        except Exception as error_msg:
+            logging.error(error_msg)
             return False
 
-    def get_setting_list(self, profile_id):
+    def get_list(self, profile_id):
         try:
-            setting_list = self.select(ProfileSettingList, SettingList)\
-                               .where(ProfileSettingList.profile_id == profile_id)\
-                               .join(SettingList, on=(ProfileSettingList.setting_id == SettingList.id).alias('setting'))
-            return setting_list
+            item_list = self.select().join(self.additional_field).where(self._schema.model.profile_id == profile_id)
+            return item_list
         except self.DoesNotExist:
             return []
 
-    def delete_setting_from_list(self, profile_id, setting_id):
+    def delete_from_list(self, profile_id, item_id):
         try:
-            delete_setting = self.delete().where((ProfileSettingList.profile_id == profile_id) &
-                                                 (ProfileSettingList.setting_id == setting_id))
-            delete_setting.execute()
+            delete_item = self.delete().where((self._schema.model.profile_id == profile_id) &
+                                              (self._schema.model.item_id == item_id))
+            delete_item.execute()
             return True
         except self.DoesNotExist:
             return False
+
+
+class SettingList(AdditionalField):
+    pass
+
+
+class ProfileSettingList(ProfileAdditionalField):
+    additional_field = SettingList
+    item = peewee.ForeignKeyField(additional_field, on_delete='cascade')
 
 
 class RpRating(AdditionalField):
     pass
 
 
-class ProfileRpRatingList(peewee.Model):
-    profile_id = peewee.IntegerField()
-    item_id = peewee.IntegerField()
-    is_allowed = peewee.BooleanField(default=True)
-
-    class Meta:
-        database = db
-        primary_key = peewee.CompositeKey('profile_id', 'item_id')
-
-    def add_item(self, profile_id, item_id):
-        try:
-            added_item = self.create(profile_id=profile_id,
-                                     item_id=item_id)
-            return added_item
-        except:
-            return False
-
-    def get_item_list(self, profile_id):
-        try:
-            item_list = self.select(ProfileRpRatingList, RpRating)\
-                            .where(ProfileRpRatingList.profile_id == profile_id)\
-                            .join(RpRating, on=(ProfileRpRatingList.item_id == RpRating.id).alias('item'))
-            return item_list
-        except self.DoesNotExist:
-            return []
-
-    def delete_item_from_list(self, profile_id, item_id):
-        try:
-            delete_item = self.delete().where((ProfileRpRatingList.profile_id == profile_id) &
-                                              (ProfileRpRatingList.item_id == item_id))
-            delete_item.execute()
-            return True
-        except self.DoesNotExist:
-            return False
+class ProfileRpRatingList(ProfileAdditionalField):
+    additional_field = RpRating
+    item = peewee.ForeignKeyField(additional_field, on_delete='cascade')
 
 
 class Notification(peewee.Model):
@@ -365,7 +355,6 @@ def init_db():
 
 
 if __name__ == "__main__":
-    pass
     # logging.basicConfig(format='%(filename)-15s[LINE:%(lineno)d]# %(levelname)-8s [%(asctime)s]  %(message)s',
     #                     level=logging.INFO)
     # TestField.create_table()
@@ -379,12 +368,12 @@ if __name__ == "__main__":
     # t_id = int(input('delete id'))
     # print(TestField().delete_field(t_id))
 
-
     # import playhouse.migrate as playhouse_migrate
     # migrator = playhouse_migrate.SqliteMigrator(db)
     #
     # playhouse_migrate.migrate(
-    #     migrator.add_column('RoleOffer', 'is_actual', RoleOffer.is_actual),
-    #     migrator.rename_column('RoleOffer', 'is_actual', 'actual'),
-    #     migrator.drop_column('story', 'some_old_field')
+        # migrator.add_column('RoleOffer', 'is_actual', RoleOffer.is_actual),
+        # migrator.rename_column('ProfileSettingList', 'setting_id', 'item_id'),
+        # migrator.drop_column('story', 'some_old_field')
     # )
+    pass

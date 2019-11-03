@@ -7,7 +7,7 @@ from bot_rp_finder.vk_api.Keys import Keys
 from bot_rp_finder.database import user_class
 
 logging.basicConfig(format='%(filename)-15s[LINE:%(lineno)d]# %(levelname)-8s [%(asctime)s]  %(message)s',
-                    level=logging.INFO)
+                    level=logging.DEBUG)
 
 
 if __name__ == '__main__':
