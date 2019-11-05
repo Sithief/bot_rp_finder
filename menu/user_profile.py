@@ -14,12 +14,12 @@ def get_menus():
         'create_profile': create_profile, 'delete_profile': delete_profile,
         'change_profile': change_profile,
         'change_gender': change_gender,
-        'change_setting_list': change_setting_list,
-        'change_rp_rating_list': change_rp_rating_list,
         'change_images': change_images, 'input_images': input_images, 'save_images': save_images
     }
     menus.update(ChangeName().get_menu_ids())
     menus.update(ChangeDescription().get_menu_ids())
+    menus.update(ChangeSettingList().get_menu_ids())
+    menus.update(ChangeRpRatingList().get_menu_ids())
     return menus
 
 
@@ -39,17 +39,14 @@ def change_profile(user_message):
     button_main = vk_api.new_button('Главное меню', {'m_id': 'main', 'args': None}, 'primary')
     buttons_change_name = vk_api.new_button('Имя', {'m_id': ChangeName().menu_names['change']})
     buttons_change_gender = vk_api.new_button('Пол', {'m_id': 'change_gender', 'args': None})
-    buttons_change_setting = vk_api.new_button('Сеттинг',
-                                               {'m_id': 'change_setting_list', 'args': None})
-    buttons_change_rp_rating = vk_api.new_button('Рейтинг',
-                                                 {'m_id': 'change_rp_rating_list', 'args': None})
+    buttons_change_setting = vk_api.new_button('Сеттинг', {'m_id': ChangeSettingList().menu_names['change']})
+    buttons_change_rp_rating = vk_api.new_button('Рейтинг', {'m_id': ChangeRpRatingList().menu_names['change']})
     buttons_change_description = vk_api.new_button('Описание', {'m_id': ChangeDescription().menu_names['change']})
-    buttons_change_images = vk_api.new_button('Изображения',
-                                              {'m_id': 'change_images', 'args': None})
+    buttons_change_images = vk_api.new_button('Изображения', {'m_id': 'change_images', 'args': None})
     buttons_delete = vk_api.new_button('Удалить анкету',
                                        {'m_id': 'confirm_action',
                                         'args': {'m_id': 'delete_profile',
-                                                      'args': {'profile_id': user_info.item_id}}},
+                                                 'args': {'profile_id': user_info.item_id}}},
                                        'negative')
     return {'message': message['message'],
             'attachment': message['attachment'],
@@ -108,6 +105,87 @@ class InputText:
         self.init(user_message)
         self.update_db(user_message['text'])
         return self.prew_func(user_message)
+
+
+class CheckButton:
+    prew_func = staticmethod(change_profile)
+    prew_menu = 'change_profile'
+    user_info = None
+    table_class = None
+    menu_prefix = ''
+
+    def __init__(self):
+        self.menu_names = {
+            'change': self.menu_prefix + 'change',
+        }
+        self.menu_ids = {
+            self.menu_names['change']: self.change_list
+        }
+
+    def get_menu_ids(self):
+        return self.menu_ids
+
+    def init(self, user_message):
+        self.user_info = user_class.get_user(user_message['from_id'])
+
+    def change_list(self, user_message):
+        self.init(user_message)
+        profile_id = self.user_info.item_id
+        items = self.table_class.additional_field().get_item_list()
+        user_item = self.table_class.get_list(profile_id)
+        user_items_dict = {i.item.id: i for i in user_item}
+
+        message = 'Выберите подходящие параметры для персонажа:\n' \
+                  '• Первое нажатие добавляет в список\n' \
+                  '• Второе переносит в список исключений\n' \
+                  '• третье - убирает из списков'
+
+        if user_message['payload']['args']:
+            args = user_message['payload']['args']
+            item_id = self.menu_prefix + 'id'
+            if args[item_id] in user_items_dict:
+                if user_items_dict[args[item_id]].is_allowed:
+                    user_items_dict[args[item_id]].is_allowed = False
+                    user_items_dict[args[item_id]].save()
+                else:
+                    self.table_class.delete_from_list(args['profile_id'], args[item_id])
+            else:
+                self.table_class.add(args['profile_id'], args[item_id])
+                item_info = self.table_class.additional_field().get_item(args[item_id])
+                message += f'\n\n' \
+                           f'Вы добавили: "{item_info.title}"\n' \
+                           f'Его описание: {item_info.description}'
+            user_item = self.table_class.get_list(profile_id)
+            user_items_dict = {i.item.id: i for i in user_item}
+
+        item_btn = list()
+        item_id = self.menu_prefix + 'id'
+        for itm in items:
+            color = 'default'
+            if itm.id in user_items_dict:
+                if user_items_dict[itm.id].is_allowed:
+                    color = 'positive'
+                else:
+                    color = 'negative'
+            item_btn.append(vk_api.new_button(itm.title, {'m_id': self.menu_names['change'],
+                                                          'args': {item_id: itm.id, 'profile_id': profile_id}}, color))
+
+        button_return = vk_api.new_button('Назад', {'m_id': self.prew_menu}, 'primary')
+        return {'message': message, 'keyboard': [item_btn, [button_return]]}
+
+
+class ChangeSettingList(CheckButton):
+    prew_func = staticmethod(change_profile)
+    prew_menu = 'change_profile'
+    table_class = user_class.ProfileSettingList()
+    menu_prefix = 'profile_setting_'
+
+
+class ChangeRpRatingList(CheckButton):
+    prew_func = staticmethod(change_profile)
+    prew_menu = 'change_profile'
+    table_class = user_class.ProfileRpRatingList()
+    menu_prefix = 'profile_rp_rating_'
 
 
 def user_profiles(user_message):
@@ -200,100 +278,6 @@ def change_gender(user_message):
     button_return = vk_api.new_button('Вернуться к анкете',
                                       {'m_id': 'change_profile', 'args': None}, 'primary')
     return {'message': message, 'keyboard': [gen_btn, [button_return]]}
-
-
-def change_setting_list(user_message):
-    user_info = user_class.get_user(user_message['from_id'])
-    profile_id = user_info.item_id
-    setting = user_class.SettingList().get_item_list()
-    user_setting = user_class.ProfileSettingList().get_list(profile_id)
-    user_setting_list = {i.item.id: i for i in user_setting}
-
-    message = 'Выберите подходящие сеттинги для игры:\n' \
-              '• Первое нажатие добавляет в список\n' \
-              '• Второе переносит в список исключений\n' \
-              '• третье - убирает из списков'
-
-    if user_message['payload']['args']:
-        if user_message['payload']['args']['setting_id'] in user_setting_list:
-            if user_setting_list[user_message['payload']['args']['setting_id']].is_allowed:
-                user_setting_list[user_message['payload']['args']['setting_id']].is_allowed = False
-                user_setting_list[user_message['payload']['args']['setting_id']].save()
-            else:
-                user_class.ProfileSettingList().delete_from_list(user_message['payload']['args']['profile_id'],
-                                                                 user_message['payload']['args']['setting_id'])
-        else:
-            user_class.ProfileSettingList().add(user_message['payload']['args']['profile_id'],
-                                                user_message['payload']['args']['setting_id'])
-            setting_info = user_class.SettingList().get_item(user_message['payload']['args']['setting_id'])
-            message += f'\n\n' \
-                       f'Вы добавили сеттинг: "{setting_info.title}"\n' \
-                       f'Его описание: {setting_info.description}'
-        user_setting = user_class.ProfileSettingList().get_list(profile_id)
-        user_setting_list = {i.item_id: i for i in user_setting}
-
-    setting_btn = list()
-    for stt in setting:
-        color = 'default'
-        if stt.id in user_setting_list:
-            if user_setting_list[stt.id].is_allowed:
-                color = 'positive'
-            else:
-                color = 'negative'
-        setting_btn.append(vk_api.new_button(stt.title, {'m_id': 'change_setting_list',
-                                                         'args': {'setting_id': stt.id,
-                                                                  'profile_id': profile_id}}, color))
-
-    button_return = vk_api.new_button('Вернуться к анкете',
-                                      {'m_id': 'change_profile', 'args': None}, 'primary')
-    return {'message': message, 'keyboard': [setting_btn, [button_return]]}
-
-
-def change_rp_rating_list(user_message):
-    user_info = user_class.get_user(user_message['from_id'])
-    profile_id = user_info.item_id
-    item_list = user_class.RpRating().get_item_list()
-    user_item_list = user_class.ProfileRpRatingList().get_list(profile_id)
-    user_item_dict = {i.item.id: i for i in user_item_list}
-
-    message = 'Выберите подходящие сеттинги для игры:\n' \
-              '• Первое нажатие добавляет в список\n' \
-              '• Второе переносит в список исключений\n' \
-              '• третье - убирает из списков'
-
-    if user_message['payload']['args']:
-        profile_id = user_message['payload']['args']['profile_id']
-        item_id = user_message['payload']['args']['item_id']
-        if item_id in user_item_dict:
-            if user_item_dict[item_id].is_allowed:
-                user_item_dict[item_id].is_allowed = False
-                user_item_dict[item_id].save()
-            else:
-                user_class.ProfileRpRatingList().delete_from_list(profile_id, item_id)
-        else:
-            user_class.ProfileRpRatingList().add(profile_id, item_id)
-            item_info = user_class.RpRating().get_item(item_id)
-            message += f'\n\n' \
-                       f'Вы добавили рейтинг: "{item_info.title}"\n' \
-                       f'Его описание: {item_info.description}'
-        user_item_list = user_class.ProfileRpRatingList().get_list(profile_id)
-        user_item_dict = {i.item_id: i for i in user_item_list}
-
-    item_btn = list()
-    for item in item_list:
-        color = 'default'
-        if item.id in user_item_dict:
-            if user_item_dict[item.id].is_allowed:
-                color = 'positive'
-            else:
-                color = 'negative'
-        item_btn.append(vk_api.new_button(item.title, {'m_id': 'change_rp_rating_list',
-                                                       'args': {'item_id': item.id,
-                                                                'profile_id': profile_id}}, color))
-
-    button_return = vk_api.new_button('Вернуться к анкете',
-                                      {'m_id': 'change_profile', 'args': None}, 'primary')
-    return {'message': message, 'keyboard': [item_btn, [button_return]]}
 
 
 def change_images(user_message):

@@ -15,23 +15,6 @@ class Api(object):
         self.VK_API = requests.Session()
         logging.info(f'{self.name} gApi started')
 
-    # def log_write(self, log_text):
-    #     log_time = time.localtime(time.time())
-    #     log_text = '%02d.%02d.%02d %02d:%02d:%02d | %s\n' % (log_time.tm_mday,
-    #                                                          log_time.tm_mon,
-    #                                                          log_time.tm_year % 100,
-    #                                                          log_time.tm_hour,
-    #                                                          log_time.tm_min,
-    #                                                          log_time.tm_sec,
-    #                                                          log_text)
-    #     print(log_text)
-    #     try:
-    #         file_path = os.path.dirname(os.path.realpath(__file__)) + '/log/' + self.name + '_log.txt'
-    #         with open(file_path, 'a', encoding='utf-8') as log_file:
-    #             log_file.write(log_text)
-    #     except Exception as e:
-    #         print("Can't write log to file!", str(e))
-
     def request_get(self, method, parameters=None):
         if not parameters:
             parameters = {'access_token': self.token, 'v': self.version}
@@ -337,8 +320,9 @@ class UserApi(object):
 
 
 def new_button(label, button, color='default'):
+    if 'args' not in button:
+        button['args'] = None
     return {'action': {'type': 'text',
-                       # 'payload': json.dumps({'button': button}, ensure_ascii=False),
                        'payload': json.dumps(button, ensure_ascii=False),
                        'label': label},
             'color': color}
