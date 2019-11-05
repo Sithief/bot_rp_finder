@@ -117,7 +117,7 @@ class AdditionalField:
         return self.__change_text__('Введите новое описание', self.menu_names['save_description'])
 
     def __save_text__(self, user_message, check_function, try_again):
-        error_message = check_function(user_message)
+        error_message = check_function(user_message['text'])
         if error_message:
             button_return = vk_api.new_button('Назад', {'m_id': self.menu_names['info']}, 'negative')
             button_try_again = vk_api.new_button('Ввести снова', {'m_id': try_again}, 'positive')

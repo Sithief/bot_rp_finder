@@ -13,14 +13,101 @@ def get_menus():
         'user_profiles': user_profiles,
         'create_profile': create_profile, 'delete_profile': delete_profile,
         'change_profile': change_profile,
-        'change_name': change_name, 'save_name': save_name,
         'change_gender': change_gender,
         'change_setting_list': change_setting_list,
         'change_rp_rating_list': change_rp_rating_list,
-        'change_description': change_description, 'save_description': save_description,
         'change_images': change_images, 'input_images': input_images, 'save_images': save_images
     }
+    menus.update(ChangeName().get_menu_ids())
+    menus.update(ChangeDescription().get_menu_ids())
     return menus
+
+
+def change_profile(user_message):
+    user_info = user_class.get_user(user_message['from_id'])
+
+    try:
+        user_info.item_id = user_message['payload']['args']['profile_id']
+    except Exception as error_msg:
+        logging.error(str(error_msg))
+    message = system.rp_profile_display(user_info.item_id)
+
+    user_info.menu_id = 'change_profile'
+    user_info.save()
+
+    message['message'] = 'Ваша анкета:\n\n' + message['message']
+    button_main = vk_api.new_button('Главное меню', {'m_id': 'main', 'args': None}, 'primary')
+    buttons_change_name = vk_api.new_button('Имя', {'m_id': ChangeName().menu_names['change']})
+    buttons_change_gender = vk_api.new_button('Пол', {'m_id': 'change_gender', 'args': None})
+    buttons_change_setting = vk_api.new_button('Сеттинг',
+                                               {'m_id': 'change_setting_list', 'args': None})
+    buttons_change_rp_rating = vk_api.new_button('Рейтинг',
+                                                 {'m_id': 'change_rp_rating_list', 'args': None})
+    buttons_change_description = vk_api.new_button('Описание', {'m_id': ChangeDescription().menu_names['change']})
+    buttons_change_images = vk_api.new_button('Изображения',
+                                              {'m_id': 'change_images', 'args': None})
+    buttons_delete = vk_api.new_button('Удалить анкету',
+                                       {'m_id': 'confirm_action',
+                                        'args': {'m_id': 'delete_profile',
+                                                      'args': {'profile_id': user_info.item_id}}},
+                                       'negative')
+    return {'message': message['message'],
+            'attachment': message['attachment'],
+            'keyboard': [[buttons_change_name, buttons_change_description],
+                         [buttons_change_gender, buttons_change_setting, buttons_change_rp_rating],
+                         [buttons_change_images],
+                         [buttons_delete],
+                         [button_main]]}
+
+
+class InputText:
+    check_function = staticmethod(system.input_title_check)
+    prew_func = staticmethod(change_profile)
+    prew_menu = 'change_profile'
+    user_info = None
+    menu_prefix = ''
+    message_to_user = 'Введите текст'
+
+    def update_db(self, text):
+        rp_profile = user_class.get_rp_profile(self.user_info.item_id)
+        rp_profile.name = text
+        rp_profile.save()
+
+    def __init__(self):
+        self.menu_names = {
+            'change': self.menu_prefix + 'change',
+            'save':   self.menu_prefix + 'save',
+        }
+        self.menu_ids = {
+            self.menu_names['change']: self.change,
+            self.menu_names['save']:   self.save,
+        }
+
+    def get_menu_ids(self):
+        return self.menu_ids
+
+    def init(self, user_message):
+        self.user_info = user_class.get_user(user_message['from_id'])
+
+    def change(self, user_message):
+        self.init(user_message)
+        self.user_info.menu_id = self.menu_names['save']
+        self.user_info.save()
+        message = self.message_to_user
+        button_return = vk_api.new_button('Назад', {'m_id': self.prew_menu}, 'negative')
+        return {'message': message, 'keyboard': [[button_return]]}
+
+    def save(self, user_message):
+        check_function = self.check_function
+        error_message = check_function(user_message['text'])
+        if error_message:
+            button_return = vk_api.new_button('Назад', {'m_id': self.prew_menu}, 'negative')
+            button_try_again = vk_api.new_button('Ввести снова', {'m_id':  self.menu_names['change']}, 'positive')
+            return {'message': error_message, 'keyboard': [[button_return, button_try_again]]}
+
+        self.init(user_message)
+        self.update_db(user_message['text'])
+        return self.prew_func(user_message)
 
 
 def user_profiles(user_message):
@@ -65,69 +152,32 @@ def delete_profile(user_message):
     return {'message': message, 'keyboard': [[button_return]]}
 
 
-def change_profile(user_message):
-    user_info = user_class.get_user(user_message['from_id'])
-
-    try:
-        user_info.item_id = user_message['payload']['args']['profile_id']
-    except Exception as error_msg:
-        logging.error(str(error_msg))
-    message = system.rp_profile_display(user_info.item_id)
-
-    user_info.menu_id = 'change_profile'
-    user_info.save()
-
-    message['message'] = 'Ваша анкета:\n\n' + message['message']
-    button_main = vk_api.new_button('Главное меню', {'m_id': 'main', 'args': None}, 'primary')
-    buttons_change_name = vk_api.new_button('Имя', {'m_id': 'change_name', 'args': None})
-    buttons_change_gender = vk_api.new_button('Пол', {'m_id': 'change_gender', 'args': None})
-    buttons_change_setting = vk_api.new_button('Сеттинг',
-                                               {'m_id': 'change_setting_list', 'args': None})
-    buttons_change_rp_rating = vk_api.new_button('Рейтинг',
-                                                 {'m_id': 'change_rp_rating_list', 'args': None})
-    buttons_change_description = vk_api.new_button('Описание',
-                                                   {'m_id': 'change_description', 'args': None})
-    buttons_change_images = vk_api.new_button('Изображения',
-                                              {'m_id': 'change_images', 'args': None})
-    buttons_delete = vk_api.new_button('Удалить анкету',
-                                       {'m_id': 'confirm_action',
-                                        'args': {'m_id': 'delete_profile',
-                                                      'args': {'profile_id': user_info.item_id}}},
-                                       'negative')
-    return {'message': message['message'],
-            'attachment': message['attachment'],
-            'keyboard': [[buttons_change_name, buttons_change_description],
-                         [buttons_change_gender, buttons_change_setting, buttons_change_rp_rating],
-                         [buttons_change_images],
-                         [buttons_delete],
-                         [button_main]]}
+class ChangeProfileText(InputText):
+    prew_func = staticmethod(change_profile)
+    prew_menu = 'change_profile'
+    user_info = None
 
 
-def change_name(user_message):
-    user_info = user_class.get_user(user_message['from_id'])
-    user_info.menu_id = 'save_name'
-    user_info.save()
-    message = 'Введите имя вашего персонажа'
-    button_return = vk_api.new_button('Вернуться к анкете',
-                                      {'m_id': 'change_profile', 'args': None}, 'negative')
+class ChangeName(ChangeProfileText):
+    check_function = staticmethod(system.input_title_check)
+    menu_prefix = 'profile_name_'
+    message_to_user = 'Введите имя персонажа'
 
-    return {'message': message, 'keyboard': [[button_return]]}
+    def update_db(self, text):
+        rp_profile = user_class.get_rp_profile(self.user_info.item_id)
+        rp_profile.name = text
+        rp_profile.save()
 
 
-def save_name(user_message):
-    error_message = system.input_title_check(user_message)
-    if error_message:
-        button_return = vk_api.new_button('Вернуться к анкете',
-                                          {'m_id': 'change_profile', 'args': None}, 'negative')
-        button_try_again = vk_api.new_button('Ввести имя снова',
-                                             {'m_id': 'change_name', 'args': None}, 'positive')
-        return {'message': error_message, 'keyboard': [[button_return, button_try_again]]}
+class ChangeDescription(ChangeProfileText):
+    check_function = staticmethod(system.input_description_check)
+    menu_prefix = 'profile_description_'
+    message_to_user = 'Введите описание персонажа'
 
-    user_info = user_class.get_user(user_message['from_id'])
-    rp_profile = user_class.get_rp_profile(user_info.item_id)
-    rp_profile.name = user_message['text']
-    rp_profile.save()
-    return change_profile(user_message)
+    def update_db(self, text):
+        rp_profile = user_class.get_rp_profile(self.user_info.item_id)
+        rp_profile.description = text
+        rp_profile.save()
 
 
 def change_gender(user_message):
@@ -244,32 +294,6 @@ def change_rp_rating_list(user_message):
     button_return = vk_api.new_button('Вернуться к анкете',
                                       {'m_id': 'change_profile', 'args': None}, 'primary')
     return {'message': message, 'keyboard': [item_btn, [button_return]]}
-
-
-def change_description(user_message):
-    user_info = user_class.get_user(user_message['from_id'])
-    user_info.menu_id = 'save_description'
-    user_info.save()
-    message = 'Введите описание вашего персонажа'
-    button_return = vk_api.new_button('Вернуться к анкете',
-                                      {'m_id': 'change_profile', 'args': None}, 'negative')
-    return {'message': message, 'keyboard': [[button_return]]}
-
-
-def save_description(user_message):
-    error_message = system.input_description_check(user_message)
-    if error_message:
-        button_return = vk_api.new_button('Вернуться к анкете',
-                                          {'m_id': 'change_profile', 'args': None}, 'negative')
-        button_try_again = vk_api.new_button('Ввести опсание снова',
-                                             {'m_id': 'change_name', 'args': None}, 'positive')
-        return {'message': error_message, 'keyboard': [[button_return, button_try_again]]}
-
-    user_info = user_class.get_user(user_message['from_id'])
-    rp_profile = user_class.get_rp_profile(user_info.item_id)
-    rp_profile.description = user_message['text']
-    rp_profile.save()
-    return change_profile(user_message)
 
 
 def change_images(user_message):

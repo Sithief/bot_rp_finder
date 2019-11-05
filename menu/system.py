@@ -33,35 +33,35 @@ def access_error():
     return {'message': message, 'keyboard': [[button_return]]}
 
 
-def input_title_check(user_message, title_len=25):
+def input_title_check(message_text, title_len=25):
     symbols = 'abcdefghijklmnopqrstuvwxyz' + 'абвгдеёжзийклмнопрстуфхцчшщьыъэюя' + "1234567890_-+,. '()"
 
-    if len(user_message['text']) > title_len:
+    if len(message_text) > title_len:
         message = f'Длина текста превосходит {title_len} символов.\n Придумайте более короткий вариант.'
         return message
 
-    elif len(user_message['text']) == 0:
+    elif len(message_text) == 0:
         message = f'Нужно было ввести текст.'
         return message
 
-    elif not all([i in symbols for i in user_message['text'].lower()]):
-        error_symbols = ['"' + i.replace('\\', '\\\\') + '"' for i in user_message['text'].lower() if i not in symbols]
+    elif not all([i in symbols for i in message_text.lower()]):
+        error_symbols = ['"' + i.replace('\\', '\\\\') + '"' for i in message_text.lower() if i not in symbols]
         message = f"Текст содержит недопустимые символы: {' '.join(error_symbols)}"
         return message
     return ''
 
 
-def input_description_check(user_message, description_len=500, lines_count=15):
-    if len(user_message['text']) > description_len:
+def input_description_check(message_text, description_len=500, lines_count=15):
+    if len(message_text) > description_len:
         message = f'Длина описания превосходит {description_len} символов.\n' \
                   f'Постарайтесь сократить описание, оставив только самое важное.'
         return message
 
-    if len(user_message['text']) == 0:
+    if len(message_text) == 0:
         message = f'Для описания нужно ввести текст.'
         return message
 
-    if user_message['text'].count('\n') > lines_count:
+    if message_text.count('\n') > lines_count:
         message = f"Вы использовали перенос строки слишком часто, " \
                   f"теперь описание занимает слишком много места на экране.\n" \
                   f"Попробуйте уменьшить количество переносов на новую строку."
