@@ -8,6 +8,7 @@ def get_menus():
     menus = dict()
     menus.update(SettingConfiguration().get_menu_ids())
     menus.update(RpRatingConfiguration().get_menu_ids())
+    menus.update(GenderConfiguration().get_menu_ids())
     return menus
 
 # Меню администратора
@@ -165,9 +166,14 @@ class AdditionalField:
 
 class SettingConfiguration(AdditionalField):
     table_class = user_class.SettingList()
-    menu_prefix = 'setting_'
+    menu_prefix = 'admin_setting_'
 
 
 class RpRatingConfiguration(AdditionalField):
     table_class = user_class.RpRating()
-    menu_prefix = 'rp_rating_'
+    menu_prefix = 'admin_rp_rating_'
+
+
+class GenderConfiguration(AdditionalField):
+    table_class = user_class.Gender()
+    menu_prefix = 'admin_gender_'

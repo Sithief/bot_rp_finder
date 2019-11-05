@@ -75,8 +75,11 @@ def rp_profile_display(profile_id):
         return access_error()
     profile = dict({'message': '', 'attachment': ''})
     profile['message'] += f'Имя: {rp_profile.name}\n'
-    if rp_profile.gender != 'Не указано':
-        profile['message'] += f'Пол: {rp_profile.gender}\n'
+
+    user_gender_list = user_class.ProfileGenderList().get_list(profile_id)
+    user_gender_list = [i.item.title for i in user_gender_list]
+    if user_gender_list:
+        profile['message'] += f'Пол: {", ".join(user_gender_list)}\n'
 
     user_rating_list = user_class.ProfileRpRatingList().get_list(profile_id)
     user_want_rating_list = [i.item.title for i in user_rating_list if i.is_allowed]

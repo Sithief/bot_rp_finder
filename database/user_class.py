@@ -240,6 +240,15 @@ class ProfileRpRatingList(ProfileAdditionalField):
     item = peewee.ForeignKeyField(additional_field, on_delete='cascade')
 
 
+class Gender(AdditionalField):
+    pass
+
+
+class ProfileGenderList(ProfileAdditionalField):
+    additional_field = Gender
+    item = peewee.ForeignKeyField(additional_field, on_delete='cascade')
+
+
 class Notification(peewee.Model):
     owner_id = peewee.IntegerField(default=0)
     title = peewee.CharField()
@@ -352,6 +361,8 @@ def init_db():
     Notification.create_table()
     RpRating.create_table()
     ProfileRpRatingList.create_table()
+    Gender.create_table()
+    ProfileGenderList.create_table()
 
 
 if __name__ == "__main__":

@@ -13,13 +13,13 @@ def get_menus():
         'user_profiles': user_profiles,
         'create_profile': create_profile, 'delete_profile': delete_profile,
         'change_profile': change_profile,
-        'change_gender': change_gender,
         'change_images': change_images, 'input_images': input_images, 'save_images': save_images
     }
     menus.update(ChangeName().get_menu_ids())
     menus.update(ChangeDescription().get_menu_ids())
     menus.update(ChangeSettingList().get_menu_ids())
     menus.update(ChangeRpRatingList().get_menu_ids())
+    menus.update(ChangeGenderList().get_menu_ids())
     return menus
 
 
@@ -80,7 +80,7 @@ def change_profile(user_message):
     message['message'] = 'Ваша анкета:\n\n' + message['message']
     button_main = vk_api.new_button('Главное меню', {'m_id': 'main', 'args': None}, 'primary')
     buttons_change_name = vk_api.new_button('Имя', {'m_id': ChangeName().menu_names['change']})
-    buttons_change_gender = vk_api.new_button('Пол', {'m_id': 'change_gender', 'args': None})
+    buttons_change_gender = vk_api.new_button('Пол', {'m_id': ChangeGenderList().menu_names['change']})
     buttons_change_setting = vk_api.new_button('Сеттинг', {'m_id': ChangeSettingList().menu_names['change']})
     buttons_change_rp_rating = vk_api.new_button('Рейтинг', {'m_id': ChangeRpRatingList().menu_names['change']})
     buttons_change_description = vk_api.new_button('Описание', {'m_id': ChangeDescription().menu_names['change']})
@@ -238,24 +238,31 @@ class CheckButton:
                 message += self.user_choise(user_message, user_items_dict)
             user_item = self.table_class.get_list(profile_id)
             user_items_dict = {i.item.id: i for i in user_item}
-            
+
         item_btn = self.item_buttons(profile_id, user_items_dict)
         button_return = vk_api.new_button('Назад', {'m_id': self.prew_menu}, 'primary')
         return {'message': message, 'keyboard': [item_btn, [button_return]]}
 
 
-class ChangeSettingList(CheckButton):
+class ProfileList(CheckButton):
     prew_func = staticmethod(change_profile)
     prew_menu = 'change_profile'
+
+
+class ChangeSettingList(ProfileList):
     table_class = user_class.ProfileSettingList()
     menu_prefix = 'profile_setting_'
 
 
-class ChangeRpRatingList(CheckButton):
-    prew_func = staticmethod(change_profile)
-    prew_menu = 'change_profile'
+class ChangeRpRatingList(ProfileList):
     table_class = user_class.ProfileRpRatingList()
     menu_prefix = 'profile_rp_rating_'
+
+
+class ChangeGenderList(ProfileList):
+    unique_option = True
+    table_class = user_class.ProfileGenderList()
+    menu_prefix = 'profile_gender_'
 
 
 class ChangeProfileText(InputText):
@@ -284,28 +291,6 @@ class ChangeDescription(ChangeProfileText):
         rp_profile = user_class.get_rp_profile(self.user_info.item_id)
         rp_profile.description = text
         rp_profile.save()
-
-
-def change_gender(user_message):
-    user_info = user_class.get_user(user_message['from_id'])
-    profile = user_class.get_rp_profile(user_info.item_id)
-
-    if user_message['payload']['args']:
-        profile.gender = user_message['payload']['args']
-        profile.save()
-
-    message = 'Выберите пол вашего персонажа'
-
-    gen_btn = list()
-    for gen in genders:
-        color = 'default'
-        if profile.gender == gen:
-            color = 'positive'
-        gen_btn.append(vk_api.new_button(gen, {'m_id': 'change_gender', 'args': gen}, color))
-
-    button_return = vk_api.new_button('Вернуться к анкете',
-                                      {'m_id': 'change_profile', 'args': None}, 'primary')
-    return {'message': message, 'keyboard': [gen_btn, [button_return]]}
 
 
 def change_images(user_message):
