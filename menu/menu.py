@@ -34,18 +34,9 @@ def main(user_message):
     message = 'Главное меню'
     button_profiles = vk_api.new_button('Мои анкеты', {'m_id': 'user_profiles'})
     button_search = vk_api.new_button('Найти соигроков', {'m_id': 'profiles_search'})
-    admin_buttons = []
+    admin_button = []
     if user_info.is_admin:
-
-        button_admin_setting = vk_api.new_button('Настройки списка сеттингов',
-                                                 {'m_id': admin.SettingConfiguration().menu_names['item_list']})
-        button_admin_rp_rating = vk_api.new_button('Настройки списка рейтингов ролевой',
-                                                   {'m_id': admin.RpRatingConfiguration().menu_names['item_list']})
-        button_admin_gender = vk_api.new_button('Настройки списка гендеров анкеты',
-                                                {'m_id': admin.GenderConfiguration().menu_names['item_list']})
-        admin_buttons = [[button_admin_setting],
-                         [button_admin_rp_rating],
-                         [button_admin_gender]]
+        admin_button = [vk_api.new_button('Меню админа', {'m_id': 'admin_menu'})]
 
     notifications_list = user_class.get_user_notifications(user_message['from_id'])
     notification_count = len([i for i in notifications_list if not i.is_read])
@@ -54,7 +45,8 @@ def main(user_message):
     button_notifications = vk_api.new_button(notifications_label, {'m_id': 'notifications'}, notifications_color)
     return {'message': message, 'keyboard': [[button_profiles],
                                              [button_search],
-                                             [button_notifications]] + admin_buttons}
+                                             [button_notifications],
+                                             admin_button]}
 
 
 

@@ -69,6 +69,13 @@ def input_description_check(message_text, description_len=500, lines_count=15):
     return ''
 
 
+def get_profile_parameter(db_table, profile_id):
+    profile_parameter_list = db_table.get_list(profile_id)
+    user_want_parameter_list = [i.item.title for i in profile_parameter_list if i.is_allowed]
+    user_unwant_parameter_list = [i.item.title for i in profile_parameter_list if not i.is_allowed]
+    return user_want_parameter_list, user_unwant_parameter_list
+
+
 def rp_profile_display(profile_id):
     rp_profile = user_class.get_rp_profile(profile_id)
     if not rp_profile:
@@ -76,28 +83,25 @@ def rp_profile_display(profile_id):
     profile = dict({'message': '', 'attachment': ''})
     profile['message'] += f'Имя: {rp_profile.name}\n'
 
-    user_gender_list = user_class.ProfileGenderList().get_list(profile_id)
-    user_gender_list = [i.item.title for i in user_gender_list]
-    if user_gender_list:
-        profile['message'] += f'Пол: {", ".join(user_gender_list)}\n'
+    gender_list, _ = get_profile_parameter(user_class.ProfileGenderList(), profile_id)
+    if gender_list:
+        profile['message'] += f'Пол: {", ".join(gender_list)}\n'
 
-    user_rating_list = user_class.ProfileRpRatingList().get_list(profile_id)
-    user_want_rating_list = [i.item.title for i in user_rating_list if i.is_allowed]
-    user_unwant_rating_list = [i.item.title for i in user_rating_list if not i.is_allowed]
-    if user_want_rating_list:
-        profile['message'] += f'Желательный рейтинг: {", ".join(user_want_rating_list)}\n'
-    if user_unwant_rating_list:
-        profile['message'] += f'Нежелательный рейтинг: {", ".join(user_unwant_rating_list)}\n'
+    species_list, _ = get_profile_parameter(user_class.ProfileSpeciesList(), profile_id)
+    if species_list:
+        profile['message'] += f'Вид: {", ".join(species_list)}\n'
 
-    user_setting_list = user_class.ProfileSettingList().get_list(profile_id)
-    user_want_setting_list = [i.item.title for i in user_setting_list if i.is_allowed]
-    user_unwant_setting_list = [i.item.title for i in user_setting_list if not i.is_allowed]
-    # user_want_setting_list = [i.title for i in user_setting_list if i.is_allowed]
-    # user_unwant_setting_list = [i.title for i in user_setting_list if not i.is_allowed]
-    if user_want_setting_list:
-        profile['message'] += f'Желательный сеттинг: {", ".join(user_want_setting_list)}\n'
-    if user_unwant_setting_list:
-        profile['message'] += f'Нежелательный сеттинг: {", ".join(user_unwant_setting_list)}\n'
+    want_rating_list, unwant_rating_list = get_profile_parameter(user_class.ProfileRpRatingList(), profile_id)
+    if want_rating_list:
+        profile['message'] += f'Желательный рейтинг: {", ".join(want_rating_list)}\n'
+    if unwant_rating_list:
+        profile['message'] += f'Нежелательный рейтинг: {", ".join(unwant_rating_list)}\n'
+
+    want_setting_list, unwant_setting_list = get_profile_parameter(user_class.ProfileSettingList(), profile_id)
+    if want_setting_list:
+        profile['message'] += f'Желательный сеттинг: {", ".join(want_setting_list)}\n'
+    if unwant_setting_list:
+        profile['message'] += f'Нежелательный сеттинг: {", ".join(unwant_setting_list)}\n'
 
     profile['message'] += f'Описание: {rp_profile.description}\n'
     profile['attachment'] = ','.join(json.loads(rp_profile.arts))

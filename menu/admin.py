@@ -5,13 +5,32 @@ from bot_rp_finder.menu import system
 
 
 def get_menus():
-    menus = dict()
+    menus = {'admin_menu': admin_menu}
     menus.update(SettingConfiguration().get_menu_ids())
     menus.update(RpRatingConfiguration().get_menu_ids())
     menus.update(GenderConfiguration().get_menu_ids())
+    menus.update(SpeciesConfiguration().get_menu_ids())
     return menus
 
 # Меню администратора
+
+
+def admin_menu(user_message):
+    message = 'Меню администратора'
+    button_admin_setting = vk_api.new_button('Настройки списка сеттингов',
+                                             {'m_id': SettingConfiguration().menu_names['item_list']})
+    button_admin_rp_rating = vk_api.new_button('Настройки списка рейтингов ролевой',
+                                               {'m_id': RpRatingConfiguration().menu_names['item_list']})
+    button_admin_gender = vk_api.new_button('Настройки списка гендеров анкеты',
+                                            {'m_id': GenderConfiguration().menu_names['item_list']})
+    button_admin_species = vk_api.new_button('Настройки списка видов существ',
+                                             {'m_id': SpeciesConfiguration().menu_names['item_list']})
+    button_main = vk_api.new_button('Главное меню', {'m_id': 'main'}, 'primary')
+    return {'message': message, 'keyboard': [[button_admin_setting],
+                                             [button_admin_rp_rating],
+                                             [button_admin_gender],
+                                             [button_admin_species],
+                                             [button_main]]}
 
 
 class AdditionalField:
@@ -177,3 +196,8 @@ class RpRatingConfiguration(AdditionalField):
 class GenderConfiguration(AdditionalField):
     table_class = user_class.Gender()
     menu_prefix = 'admin_gender_'
+
+
+class SpeciesConfiguration(AdditionalField):
+    table_class = user_class.Species()
+    menu_prefix = 'admin_species_'

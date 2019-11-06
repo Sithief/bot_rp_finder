@@ -20,6 +20,7 @@ def get_menus():
     menus.update(ChangeSettingList().get_menu_ids())
     menus.update(ChangeRpRatingList().get_menu_ids())
     menus.update(ChangeGenderList().get_menu_ids())
+    menus.update(ChangeSpeciesList().get_menu_ids())
     return menus
 
 
@@ -83,6 +84,7 @@ def change_profile(user_message):
     buttons_change_gender = vk_api.new_button('Пол', {'m_id': ChangeGenderList().menu_names['change']})
     buttons_change_setting = vk_api.new_button('Сеттинг', {'m_id': ChangeSettingList().menu_names['change']})
     buttons_change_rp_rating = vk_api.new_button('Рейтинг', {'m_id': ChangeRpRatingList().menu_names['change']})
+    buttons_change_species = vk_api.new_button('Вид', {'m_id': ChangeSpeciesList().menu_names['change']})
     buttons_change_description = vk_api.new_button('Описание', {'m_id': ChangeDescription().menu_names['change']})
     buttons_change_images = vk_api.new_button('Изображения', {'m_id': 'change_images', 'args': None})
     buttons_delete = vk_api.new_button('Удалить анкету',
@@ -93,7 +95,8 @@ def change_profile(user_message):
     return {'message': message['message'],
             'attachment': message['attachment'],
             'keyboard': [[buttons_change_name, buttons_change_description],
-                         [buttons_change_gender, buttons_change_setting, buttons_change_rp_rating],
+                         [buttons_change_gender, buttons_change_setting,
+                          buttons_change_rp_rating, buttons_change_species],
                          [buttons_change_images],
                          [buttons_delete],
                          [button_main]]}
@@ -191,10 +194,10 @@ class CheckButton:
     def user_unique_choise(self, user_message, user_items_dict):
         args = user_message['payload']['args']
         item_id = self.menu_prefix + 'id'
-        if args[item_id] not in user_items_dict:
-            for actual_item_id in user_items_dict:
-                self.table_class.delete_from_list(args['profile_id'], actual_item_id)
+        for actual_item_id in user_items_dict:
+            self.table_class.delete_from_list(args['profile_id'], actual_item_id)
 
+        if args[item_id] not in user_items_dict:
             self.table_class.add(args['profile_id'], args[item_id])
             item_info = self.table_class.additional_field().get_item(args[item_id])
             return f'\n\n' \
@@ -257,6 +260,12 @@ class ChangeSettingList(ProfileList):
 class ChangeRpRatingList(ProfileList):
     table_class = user_class.ProfileRpRatingList()
     menu_prefix = 'profile_rp_rating_'
+
+
+class ChangeSpeciesList(ProfileList):
+    unique_option = True
+    table_class = user_class.ProfileSpeciesList()
+    menu_prefix = 'profile_species_'
 
 
 class ChangeGenderList(ProfileList):
