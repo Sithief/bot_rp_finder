@@ -19,12 +19,12 @@ def menu_hub(user_message):
         else:
             return system.empty_func(user_message)
     else:
-        user_info = user_class.get_user(user_message['from_id'])
+        user_info = user_class.User().get_user(user_message['from_id'])
         return menus[user_info.menu_id](user_message)
 
 
 def main(user_message):
-    user_info = user_class.get_user(user_message['from_id'])
+    user_info = user_class.User().get_user(user_message['from_id'])
     user_info.menu_id = 'main'
     user_info.item_id = -1
     user_info.tmp_item_id = -1

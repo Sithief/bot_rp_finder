@@ -77,7 +77,7 @@ def get_profile_parameter(db_table, profile_id):
 
 
 def rp_profile_display(profile_id):
-    rp_profile = user_class.get_rp_profile(profile_id)
+    rp_profile = user_class.RpProfile().get_profile(profile_id)
     if not rp_profile:
         return access_error()
     profile = dict({'message': '', 'attachment': ''})
@@ -109,7 +109,7 @@ def rp_profile_display(profile_id):
 
 
 def empty_func(user_message):
-    user_info = user_class.get_user(user_message['from_id'])
+    user_info = user_class.User().get_user(user_message['from_id'])
     message = 'Этого меню еще нет, но раз вы сюда пришли, вот вам монетка!'
     user_info.money += 1
     user_info.save()
@@ -122,7 +122,7 @@ class InputText:
 
     def __init__(self, user_id, next_menu, prew_menu):
         self.user_id = user_id
-        self.user_info = user_class.get_user(user_id)
+        self.user_info = user_class.User().get_user(user_id)
         self.next_menu = next_menu
         self.prew_menu = prew_menu
 
@@ -163,7 +163,7 @@ class InputText:
 
 class ItemMenu:
     def __init__(self, user_id, table_class, prew_menu):
-        self.user_info = user_class.get_user(user_id)
+        self.user_info = user_class.User().get_user(user_id)
         self.table_class = table_class
         self.prew_menu = prew_menu
 

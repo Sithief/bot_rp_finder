@@ -31,18 +31,9 @@ class User(peewee.Model):
         except self.DoesNotExist:
             return False
 
-
-def create_user(user_id, name, is_fem):
-    new_user = User.create(id=user_id, name=name, is_fem=is_fem)
-    return new_user
-
-
-def get_user(user_id):
-    try:
-        user = User.get(User.id == user_id)
-        return user
-    except User.DoesNotExist:
-        return False
+    def create_user(self, user_id, name, is_fem):
+        new_user = self.create(id=user_id, name=name, is_fem=is_fem)
+        return new_user
 
 
 class RpProfile(peewee.Model):
@@ -62,52 +53,38 @@ class RpProfile(peewee.Model):
         except self.DoesNotExist:
             return False
 
+    def get_user_profiles(self, owner_id):
+        try:
+            profiles = self.select().where(self._schema.model.owner_id == owner_id)
+            return profiles
+        except self.DoesNotExist:
+            return []
 
-def get_user_profiles(owner_id):
-    try:
-        profiles = RpProfile.select().where(RpProfile.owner_id == owner_id)
-        return profiles
-    except RpProfile.DoesNotExist:
-        return []
+    def create_profile(self, user_id):
+        new_rp_profile = self.create(owner_id=user_id)
+        return new_rp_profile
 
-
-def create_rp_profile(user_id):
-    new_rp_profile = RpProfile.create(owner_id=user_id)
-    return new_rp_profile
-
-
-def get_rp_profile(profile_id):
-    try:
-        rp_profile = RpProfile.get(RpProfile.id == profile_id)
-        return rp_profile
-    except RpProfile.DoesNotExist:
-        return False
-
-
-def delete_rp_profile(profile_id):
-    try:
-        delete_profile = RpProfile.delete().where(RpProfile.id == profile_id)
-        delete_profile.execute()
-        return True
-    except RpProfile.DoesNotExist:
-        return False
+    def delete_profile(self, profile_id):
+        try:
+            delete_profile = self.delete().where(self._schema.model.id == profile_id)
+            delete_profile.execute()
+            return True
+        except self.DoesNotExist:
+            return False
 
 
 class RoleOffer(peewee.Model):
     from_owner_id = peewee.IntegerField()
-    to_profile_id = peewee.IntegerField()
     to_owner_id = peewee.IntegerField()
     actual = peewee.BooleanField(default=True)
 
     class Meta:
         database = db
-        primary_key = peewee.CompositeKey('from_owner_id', 'to_profile_id')
+        primary_key = peewee.CompositeKey('from_owner_id', 'to_owner_id')
 
-    def create_offer(self, from_owner_id, to_profile_id):
+    def create_offer(self, from_owner_id, to_owner_id):
         try:
-            to_owner_id = get_rp_profile(to_profile_id).owner_id
             new_rp_offer = self.create(from_owner_id=from_owner_id,
-                                       to_profile_id=to_profile_id,
                                        to_owner_id=to_owner_id)
             return new_rp_offer
         except:
@@ -123,23 +100,6 @@ class RoleOffer(peewee.Model):
     def get_offers_to_user(self, user_id):
         try:
             user_offers = self.select().where(RoleOffer.to_owner_id == user_id)
-            return user_offers
-        except self.DoesNotExist:
-            return []
-
-    def offer_to_profile(self, user_id, profile_id):
-        try:
-            user_offer = self.get((RoleOffer.from_owner_id == user_id) &
-                                  (RoleOffer.to_profile_id == profile_id))
-            return user_offer
-        except self.DoesNotExist:
-            return False
-
-    def get_offers_to_profile_owner(self, user_id, profile_id):
-        try:
-            owner_id = get_rp_profile(profile_id).owner_id
-            user_offers = self.select().where((RoleOffer.from_owner_id == user_id) &
-                                              (RoleOffer.to_owner_id == owner_id))
             return user_offers
         except self.DoesNotExist:
             return []
@@ -335,30 +295,31 @@ def count_similarity_score(user_profile, player_profile):
 
 
 def find_suitable_profiles(profile_id):
+    pass
     # TODO доделать поиск по остальным параметрам
-    try:
-        user_profile = get_rp_profile(profile_id)
-        setting_list = [i.setting_id for i in ProfileSettingList().get_setting_list(profile_id) if i.is_allowed]
-        suit_by_setting_ids = [i.profile_id for i in
-                               ProfileSettingList.select().where((ProfileSettingList.setting_id.in_(setting_list) &
-                                                                  ProfileSettingList.is_allowed))]
-
-        rating_list = [i.item_id for i in ProfileRpRatingList().get_item_list(profile_id) if i.is_allowed]
-        suit_by_rating_ids = [i.profile_id for i in
-                              ProfileRpRatingList.select().where((ProfileRpRatingList.item_id.in_(rating_list) &
-                                                                  ProfileRpRatingList.is_allowed))]
-
-        suit_prof_ids = list(set(suit_by_setting_ids + suit_by_rating_ids))
-        suitable_profiles = RpProfile.select().where(RpProfile.id.in_(suit_prof_ids) &
-                                                     (RpProfile.owner_id != user_profile.owner_id))
-
-        suitable_profiles_scores = [[profile, count_similarity_score(user_profile, profile)]
-                                    for profile in set(suitable_profiles)]
-        suitable_profiles_scores.sort(key=lambda x: x[1], reverse=True)
-        suitable_profiles = [profile[0] for profile in suitable_profiles_scores]
-        return suitable_profiles
-    except ProfileSettingList.DoesNotExist or RpProfile.DoesNotExist:
-        return []
+    # try:
+    #     user_profile = get_rp_profile(profile_id)
+    #     setting_list = [i.setting_id for i in ProfileSettingList().get_list(profile_id) if i.is_allowed]
+    #     suit_by_setting_ids = [i.profile_id for i in
+    #                            ProfileSettingList.select().where((ProfileSettingList._id.in_(setting_list) &
+    #                                                               ProfileSettingList.is_allowed))]
+    #
+    #     rating_list = [i.item_id for i in ProfileRpRatingList().get_item_list(profile_id) if i.is_allowed]
+    #     suit_by_rating_ids = [i.profile_id for i in
+    #                           ProfileRpRatingList.select().where((ProfileRpRatingList.item_id.in_(rating_list) &
+    #                                                               ProfileRpRatingList.is_allowed))]
+    #
+    #     suit_prof_ids = list(set(suit_by_setting_ids + suit_by_rating_ids))
+    #     suitable_profiles = RpProfile.select().where(RpProfile.id.in_(suit_prof_ids) &
+    #                                                  (RpProfile.owner_id != user_profile.owner_id))
+    #
+    #     suitable_profiles_scores = [[profile, count_similarity_score(user_profile, profile)]
+    #                                 for profile in set(suitable_profiles)]
+    #     suitable_profiles_scores.sort(key=lambda x: x[1], reverse=True)
+    #     suitable_profiles = [profile[0] for profile in suitable_profiles_scores]
+    #     return suitable_profiles
+    # except ProfileSettingList.DoesNotExist or RpProfile.DoesNotExist:
+    #     return []
 
 
 def init_db():

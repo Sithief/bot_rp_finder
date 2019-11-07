@@ -7,7 +7,9 @@ from bot_rp_finder.vk_api.Keys import Keys
 from bot_rp_finder.database import user_class
 
 logging.basicConfig(format='%(filename)-15s[LINE:%(lineno)d]# %(levelname)-8s [%(asctime)s]  %(message)s',
-                    level=logging.DEBUG)
+                    # level=logging.INFO
+                    level=logging.DEBUG
+                    )
 
 
 if __name__ == '__main__':
@@ -19,17 +21,29 @@ if __name__ == '__main__':
     longpoll_listner = multiprocessing.Process(target=longpoll.listen, args=(longpoll_stdout,))
     longpoll_listner.start()
     last_message_time = time.time()
+
+    processing_time = []
+
     while 1:
         new_messages = longpoll_stdout.get(timeout=120)
         for msg in new_messages:
             print('usr msg:', msg)
-            if not user_class.get_user(msg['from_id']):
+            if not user_class.User().get_user(msg['from_id']):
                 user_info = bot_api.get_user_info(msg['from_id'])
-                user_class.create_user(user_id=user_info['id'],
-                                       name=user_info['first_name'],
-                                       is_fem=user_info['sex'] % 2)
-
+                user_class.User().create_user(user_id=user_info['id'],
+                                              name=user_info['first_name'],
+                                              is_fem=user_info['sex'] % 2)
+            timer = time.time()
             bot_message = menu.menu_hub(msg)
-            print('bot msg:', bot_message)
+
+            last_time = time.time() - timer
+            processing_time = processing_time[:1000] + [last_time]
+            processing_time.sort()
+            mean_time = sum(processing_time) / len(processing_time)
+            median_time = processing_time[len(processing_time)//2]
+            print(f'mean time:   {round(mean_time, 5)}\n'
+                  f'median time: {round(median_time, 5)}\n'
+                  f'last time:   {round(last_time, 5)}\n'
+                  f'bot msg: {bot_message}')
             print()
             bot_api.msg_send(peer_id=msg['from_id'], payload=bot_message)

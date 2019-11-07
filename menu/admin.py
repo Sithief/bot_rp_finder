@@ -65,7 +65,7 @@ class AdditionalField:
         return self.menu_ids
 
     def init(self, user_message):
-        self.user_info = user_class.get_user(user_message['from_id'])
+        self.user_info = user_class.User().get_user(user_message['from_id'])
 
     def create(self, user_message):
         new_item = self.table_class.create_item()
