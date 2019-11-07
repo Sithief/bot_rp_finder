@@ -81,15 +81,22 @@ def rp_profile_display(profile_id):
     if not rp_profile:
         return access_error()
     profile = dict({'message': '', 'attachment': ''})
-    profile['message'] += f'Имя: {rp_profile.name}\n'
+    if rp_profile.search_preset:
+        profile['message'] += f'Назваие пресета: {rp_profile.name}\n'
+    else:
+        profile['message'] += f'Имя: {rp_profile.name}\n'
 
-    gender_list, _ = get_profile_parameter(user_class.ProfileGenderList(), profile_id)
+    gender_list, gender_ban_list = get_profile_parameter(user_class.ProfileGenderList(), profile_id)
     if gender_list:
         profile['message'] += f'Пол: {", ".join(gender_list)}\n'
+    if gender_ban_list and rp_profile.search_preset:
+        profile['message'] += f'Нежелательный пол: {", ".join(gender_ban_list)}\n'
 
-    species_list, _ = get_profile_parameter(user_class.ProfileSpeciesList(), profile_id)
+    species_list, species_ban_list = get_profile_parameter(user_class.ProfileSpeciesList(), profile_id)
     if species_list:
         profile['message'] += f'Вид: {", ".join(species_list)}\n'
+    if species_ban_list and rp_profile.search_preset:
+        profile['message'] += f'Нежелательный вид {", ".join(species_ban_list)}\n'
 
     want_rating_list, unwant_rating_list = get_profile_parameter(user_class.ProfileRpRatingList(), profile_id)
     if want_rating_list:
@@ -103,8 +110,9 @@ def rp_profile_display(profile_id):
     if unwant_setting_list:
         profile['message'] += f'Нежелательный сеттинг: {", ".join(unwant_setting_list)}\n'
 
-    profile['message'] += f'Описание: {rp_profile.description}\n'
-    profile['attachment'] = ','.join(json.loads(rp_profile.arts))
+    if not rp_profile.search_preset:
+        profile['message'] += f'Описание: {rp_profile.description}\n'
+        profile['attachment'] = ','.join(json.loads(rp_profile.arts))
     return profile
 
 

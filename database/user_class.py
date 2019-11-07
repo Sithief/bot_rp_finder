@@ -37,10 +37,10 @@ class User(peewee.Model):
 
 
 class RpProfile(peewee.Model):
+    search_preset = peewee.BooleanField(default=False)
     owner_id = peewee.IntegerField()
     name = peewee.CharField(default='Не указано')
-    gender = peewee.CharField(default='Не указано')
-    description = peewee.CharField(default='Не указано')
+    description = peewee.CharField(default='')
     arts = peewee.CharField(default='[]')
 
     class Meta:
@@ -53,15 +53,16 @@ class RpProfile(peewee.Model):
         except self.DoesNotExist:
             return False
 
-    def get_user_profiles(self, owner_id):
+    def get_user_profiles(self, owner_id, search_preset=False):
         try:
-            profiles = self.select().where(self._schema.model.owner_id == owner_id)
+            profiles = self.select().where((self._schema.model.owner_id == owner_id) &
+                                           (self._schema.model.search_preset == search_preset))
             return profiles
         except self.DoesNotExist:
             return []
 
-    def create_profile(self, user_id):
-        new_rp_profile = self.create(owner_id=user_id)
+    def create_profile(self, user_id, search_preset=False):
+        new_rp_profile = self.create(owner_id=user_id, search_preset=search_preset)
         return new_rp_profile
 
     def delete_profile(self, profile_id):
@@ -351,12 +352,12 @@ if __name__ == "__main__":
     # t_id = int(input('delete id'))
     # print(TestField().delete_field(t_id))
 
-    # import playhouse.migrate as playhouse_migrate
-    # migrator = playhouse_migrate.SqliteMigrator(db)
-    #
-    # playhouse_migrate.migrate(
-        # migrator.add_column('RoleOffer', 'is_actual', RoleOffer.is_actual),
+    import playhouse.migrate as playhouse_migrate
+    migrator = playhouse_migrate.SqliteMigrator(db)
+
+    playhouse_migrate.migrate(
+        migrator.add_column('RpProfile', 'search_preset', RpProfile.search_preset),
         # migrator.rename_column('ProfileSettingList', 'setting_id', 'item_id'),
-        # migrator.drop_column('story', 'some_old_field')
-    # )
+        # migrator.drop_column('RpProfile', 'gender')
+    )
     pass

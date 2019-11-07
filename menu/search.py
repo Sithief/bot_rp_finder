@@ -1,17 +1,29 @@
 import time
 import json
+import logging
 from bot_rp_finder.vk_api import vk_api
 from bot_rp_finder.database import user_class
 from bot_rp_finder.menu import system
+from bot_rp_finder.menu import user_profile
+from bot_rp_finder.menu import text_extension as t_ext
 
 
 def get_menus():
     menus = {
         'profiles_search': profiles_search,
+        'search_by_preset': search_by_preset,
+        'choose_preset_to_search': choose_preset_to_search,
+        'create_preset': create_preset,
+        'change_preset': change_preset,
         # 'choose_profile_to_search': choose_profile_to_search,
         # 'search_by_profile': search_by_profile,
         'show_player_profile': show_player_profile,
     }
+    menus.update(ChangeName().get_menu_ids())
+    menus.update(ChangeSettingList().get_menu_ids())
+    menus.update(ChangeRpRatingList().get_menu_ids())
+    menus.update(ChangeGenderList().get_menu_ids())
+    menus.update(ChangeSpeciesList().get_menu_ids())
     return menus
 
 # поиск со-игроков
@@ -21,10 +33,116 @@ def profiles_search(user_message):
     message = 'Поиск соигроков'
     # button_by_profile = vk_api.new_button('Найти соигроков подходящих к анкете',
     #                                       {'m_id': 'choose_profile_to_search', 'args': None})
+    button_by_preset = vk_api.new_button('Найти соигроков по пресету', {'m_id': 'choose_preset_to_search'})
     button_main = vk_api.new_button('Главное меню', {'m_id': 'main', 'args': None}, 'primary')
-    return {'message': message, 'keyboard': [
+    return {'message': message, 'keyboard': [[button_by_preset],
                                              # [button_by_profile],
                                              [button_main]]}
+
+
+def choose_preset_to_search(user_message):
+    message = 'Выберите один из списка ваших поисковых пресетов'
+    profiles = user_class.RpProfile().get_user_profiles(user_message['from_id'], search_preset=True)
+    pr_buttons = list()
+    for num, pr in enumerate(profiles):
+        pr_buttons.append([vk_api.new_button(pr.name,
+                                             {'m_id': 'change_preset',
+                                              'args': {'item_id': pr.id}})])
+
+    if len(profiles) < 4:
+        button_create_preset = vk_api.new_button('создать новый пресет', {'m_id': 'create_preset'}, 'primary')
+    else:
+        button_create_preset = vk_api.new_button('создать новый пресет', {'m_id': 'choose_preset_to_search'})
+
+    button_main = vk_api.new_button('Главное меню', {'m_id': 'main', 'args': None}, 'primary')
+    return {'message': message, 'keyboard': pr_buttons + [[button_create_preset], [button_main]]}
+
+
+def create_preset(user_message):
+    search_preset = user_class.RpProfile().create_profile(user_message['from_id'], search_preset=True)
+    user_info = user_class.User().get_user(user_message['from_id'])
+    user_info.item_id = search_preset.id
+    user_info.save()
+    return change_preset(user_message)
+
+
+def change_preset(user_message):
+    user_info = user_class.User().get_user(user_message['from_id'])
+
+    try:
+        user_info.item_id = user_message['payload']['args']['item_id']
+    except Exception as error_msg:
+        logging.error(str(error_msg))
+    message = system.rp_profile_display(user_info.item_id)
+
+    user_info.menu_id = 'change_preset'
+    user_info.save()
+
+    message['message'] = 'Ваша анкета:\n\n' + message['message']
+    button_main = vk_api.new_button('Главное меню', {'m_id': 'main', 'args': None}, 'primary')
+    buttons_change_name = vk_api.new_button('Название', {'m_id': ChangeName().menu_names['change']})
+    buttons_change_gender = vk_api.new_button('Пол', {'m_id': ChangeGenderList().menu_names['change']})
+    buttons_change_setting = vk_api.new_button('Сеттинг', {'m_id': ChangeSettingList().menu_names['change']})
+    buttons_change_rp_rating = vk_api.new_button('Рейтинг', {'m_id': ChangeRpRatingList().menu_names['change']})
+    buttons_change_species = vk_api.new_button('Вид', {'m_id': ChangeSpeciesList().menu_names['change']})
+    buttons_delete = vk_api.new_button('Удалить пресет',
+                                       {'m_id': 'confirm_action',
+                                        'args': {'m_id': 'delete_profile',
+                                                 'args': {'profile_id': user_info.item_id}}},
+                                       'negative')
+    button_search = vk_api.new_button('Искать по пресету', {'m_id': 'search_by_preset'}, 'positive')
+    return {'message': message['message'],
+            'attachment': message['attachment'],
+            'keyboard': [[buttons_change_name],
+                         [buttons_change_gender, buttons_change_setting,
+                          buttons_change_rp_rating, buttons_change_species],
+                         [button_search],
+                         [buttons_delete],
+                         [button_main]]}
+
+
+class PresetList(user_profile.CheckButton):
+    prew_func = staticmethod(change_preset)
+    prew_menu = 'change_preset'
+
+
+class ChangeSettingList(PresetList):
+    table_class = user_class.ProfileSettingList()
+    menu_prefix = 'preset_setting_'
+
+
+class ChangeRpRatingList(PresetList):
+    table_class = user_class.ProfileRpRatingList()
+    menu_prefix = 'preset_rp_rating_'
+
+
+class ChangeSpeciesList(PresetList):
+    table_class = user_class.ProfileSpeciesList()
+    menu_prefix = 'preset_species_'
+
+
+class ChangeGenderList(PresetList):
+    table_class = user_class.ProfileGenderList()
+    menu_prefix = 'preset_gender_'
+
+
+class ChangeName(user_profile.InputText):
+    prew_func = staticmethod(change_preset)
+    prew_menu = 'change_preset'
+    user_info = None
+    check_function = staticmethod(system.input_title_check)
+    menu_prefix = 'preset_name_'
+    message_to_user = 'Введите название пресета'
+
+    def update_db(self, text):
+        rp_profile = user_class.RpProfile().get_profile(self.user_info.item_id)
+        rp_profile.name = text
+        rp_profile.save()
+
+
+def search_by_preset(user_message):
+    button_main = vk_api.new_button('Главное меню', {'m_id': 'main', 'args': None}, 'primary')
+    return {'message': 'поиск', 'keyboard': [[button_main]]}
 
 
 # def choose_profile_to_search(user_message):
@@ -115,7 +233,7 @@ def show_player_profile(user_message):
                                                    f'{t_ext.gender_msg("его", "её", user_info.is_fem)} анкеты.'
                         notification.create_time = int(time.time())
                         buttons = list()
-                        profiles = user_class.get_user_profiles(user_message['from_id'])
+                        profiles = user_class.RpProfile().get_user_profiles(user_message['from_id'])
                         for pr in profiles:
                             buttons.append({'label': pr.name,
                                             'm_id': 'show_player_profile',
