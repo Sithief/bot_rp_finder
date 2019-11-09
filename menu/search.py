@@ -141,8 +141,46 @@ class ChangeName(user_profile.InputText):
 
 
 def search_by_preset(user_message):
-    button_main = vk_api.new_button('Главное меню', {'m_id': 'main', 'args': None}, 'primary')
-    return {'message': 'поиск', 'keyboard': [[button_main]]}
+    profiles_per_page = 4
+    user_info = user_class.User().get_user(user_message['from_id'])
+    if user_message['payload']['args'] and 'iter' in user_message['payload']['args']:
+        user_info.list_iter = user_message['payload']['args']['iter']
+        user_info.save()
+
+    suitable_profiles = user_class.find_suitable_profiles(user_info.item_id)
+
+    sent_offers = [pr.to_owner_id for pr in user_class.RoleOffer().get_offers_from_user(user_info.id) if pr.actual]
+    confirmed_offers = [pr.from_owner_id for pr in user_class.RoleOffer().get_offers_to_user(user_info.id) if pr.actual]
+    message = 'Список подходящих анкет.\n' \
+              'Синим отправленные предложения.\n' \
+              'Зелёным - взаимные предложения.'
+    pr_buttons = list()
+    for pr in suitable_profiles[user_info.list_iter * profiles_per_page:(user_info.list_iter + 1) * profiles_per_page]:
+        color = 'default'
+        if pr.id in sent_offers:
+            color = 'primary'
+            if pr.owner_id in confirmed_offers:
+                color = 'positive'
+        pr_buttons.append([vk_api.new_button(pr.name,
+                                             {'m_id': 'show_player_profile',
+                                              'args': {'profile_id': pr.id,
+                                                       'btn_back': {'label': 'К списку анкет',
+                                                                    'm_id': 'search_by_preset'}
+                                                       }}, color)])
+
+    prew_color, next_color, prew_iter, next_iter = 'default', 'default', user_info.list_iter, user_info.list_iter
+    if user_info.list_iter > 0:
+        prew_color = 'primary'
+        prew_iter = user_info.list_iter - 1
+    if (user_info.list_iter + 1) * profiles_per_page < len(suitable_profiles):
+        next_color = 'primary'
+        next_iter = user_info.list_iter + 1
+    button_prew = vk_api.new_button('Предыдущая страница', {'m_id': 'search_by_preset',
+                                                            'args': {'iter': prew_iter}}, prew_color)
+    button_next = vk_api.new_button('Следующая страница', {'m_id': 'search_by_preset',
+                                                           'args': {'iter': next_iter}}, next_color)
+    button_main = vk_api.new_button('Главное меню', {'m_id': 'main'}, 'primary')
+    return {'message': message, 'keyboard': pr_buttons + [[button_prew, button_next], [button_main]]}
 
 
 # def choose_profile_to_search(user_message):
@@ -254,8 +292,9 @@ def show_player_profile(user_message):
         pass
 
     message = system.rp_profile_display(user_info.tmp_item_id)
-    offer_to_profile = user_class.RoleOffer().offer_to_profile(user_info.id, user_info.tmp_item_id)
-    if offer_to_profile and offer_to_profile.actual:
+    offer_to_owner = user_class.RoleOffer().get_offer_to_profile(user_info.id, user_info.tmp_item_id)
+
+    if offer_to_owner and offer_to_owner.actual:
         button_offer = vk_api.new_button('Отменить предложение',
                                          {'m_id': 'show_player_profile',
                                           'args': {'offer': False, 'btn_back': btn_back}},
@@ -266,6 +305,6 @@ def show_player_profile(user_message):
                                           'args': {'offer': True, 'btn_back': btn_back}},
                                          'positive')
 
-    button_back = vk_api.new_button(btn_back['label'], {'m_id': btn_back['m_id'], 'args': btn_back['args']})
+    button_back = vk_api.new_button(btn_back['label'], {'m_id': btn_back['m_id'], 'args': btn_back.get('args', None)})
     message.update({'keyboard': [[button_offer], [button_back]]})
     return message

@@ -93,14 +93,23 @@ class RoleOffer(peewee.Model):
 
     def get_offers_from_user(self, user_id):
         try:
-            user_offers = self.select().where(RoleOffer.from_owner_id == user_id)
+            user_offers = self.select().where(self._schema.model.from_owner_id == user_id)
             return user_offers
         except self.DoesNotExist:
             return []
 
     def get_offers_to_user(self, user_id):
         try:
-            user_offers = self.select().where(RoleOffer.to_owner_id == user_id)
+            user_offers = self.select().where(self._schema.model.to_owner_id == user_id)
+            return user_offers
+        except self.DoesNotExist:
+            return []
+
+    def get_offer_to_profile(self, from_user_id, profile_id):
+        try:
+            to_user_id = RpProfile().get_profile(profile_id).owner_id
+            user_offers = self.select().where((self._schema.model.from_owner_id == from_user_id) &
+                                              (self._schema.model.to_owner_id == to_user_id))
             return user_offers
         except self.DoesNotExist:
             return []
@@ -295,9 +304,34 @@ def count_similarity_score(user_profile, player_profile):
     return score
 
 
+def suit_by_parameter(profile_id, parameter):
+    try:
+        search_list = parameter().get_list(profile_id)
+        # print('search_list', search_list.sql())
+        item_list = set(i.item_id for i in search_list if i.is_allowed)
+        suit_profiles = parameter.select()\
+            .join(parameter.profile_field, on=(parameter.profile == parameter.profile_field.id))\
+            .where(parameter.item_id.in_(item_list) & parameter.is_allowed)
+        print('suit_profiles', suit_profiles.sql())
+        return suit_profiles
+    except parameter.DoesNotExist:
+        return []
+
+
 def find_suitable_profiles(profile_id):
-    pass
-    # TODO доделать поиск по остальным параметрам
+    suit_by_setting = suit_by_parameter(profile_id, ProfileSettingList)
+    # suit_by_rp_rating = suit_by_parameter(profile_id, ProfileRpRatingList)
+    # suit_by_gender = suit_by_parameter(profile_id, ProfileGenderList)
+    # suit_by_species = suit_by_parameter(profile_id, ProfileSpeciesList)
+
+    suit_profiles = [i.profile for i in suit_by_setting]
+    print('suit_profiles:', len(suit_profiles))
+    for i in suit_profiles:
+        print(i.name)
+    # suit_profiles += [i.profile for i in suit_by_rp_rating if i not in suit_profiles]
+    # suit_profiles += [i.profile for i in suit_by_gender if i not in suit_profiles]
+    # suit_profiles += [i.profile for i in suit_by_species if i not in suit_profiles]
+    return suit_profiles
     # try:
     #     user_profile = get_rp_profile(profile_id)
     #     setting_list = [i.setting_id for i in ProfileSettingList().get_list(profile_id) if i.is_allowed]
@@ -356,8 +390,8 @@ if __name__ == "__main__":
     migrator = playhouse_migrate.SqliteMigrator(db)
 
     playhouse_migrate.migrate(
-        migrator.add_column('RpProfile', 'search_preset', RpProfile.search_preset),
-        # migrator.rename_column('ProfileSettingList', 'setting_id', 'item_id'),
-        # migrator.drop_column('RpProfile', 'gender')
+        # migrator.add_column('RpProfile', 'search_preset', RpProfile.search_preset),
+        # migrator.rename_column('ProfileSettingList', 'item_id', 'item'),
+        # migrator.drop_column('RoleOffer', 'to_profile_id')
     )
     pass
