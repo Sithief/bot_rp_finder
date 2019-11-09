@@ -258,43 +258,41 @@ def show_player_profile(user_message):
 
     try:
         if 'offer' in user_message['payload']['args']:
-            user_role_offers = user_class.RoleOffer().get_offers_to_profile_owner(user_info.id, user_info.tmp_item_id)
-            offers_dict = {i.to_profile_id: i for i in user_role_offers}
+            role_offer = user_class.RoleOffer().get_offer_to_profile(user_info.id, user_info.tmp_item_id)
             if user_message['payload']['args']['offer']:
-                if user_info.tmp_item_id not in offers_dict:
+                if not role_offer:
                     new_offer = user_class.RoleOffer().create_offer(user_info.id, user_info.tmp_item_id)
-                    if not user_role_offers:
-                        notification = user_class.create_notification(new_offer.to_owner_id, 'Предложение ролевой')
-                        notification.description = f'Пользователь [id{user_info.id}|{user_info.name}] ' \
-                                                   f'{t_ext.gender_msg("предожил", "предожила", user_info.is_fem)}' \
-                                                   f' вам ролевую, вы можете просмотреть ' \
-                                                   f'{t_ext.gender_msg("его", "её", user_info.is_fem)} анкеты.'
-                        notification.create_time = int(time.time())
-                        buttons = list()
-                        profiles = user_class.RpProfile().get_user_profiles(user_message['from_id'])
-                        for pr in profiles:
-                            buttons.append({'label': pr.name,
-                                            'm_id': 'show_player_profile',
-                                            'args': {'profile_id': pr.id,
-                                                     'btn_back': {'label': 'Вернуться к уведомлению',
-                                                                  'm_id': 'notification_display',
-                                                                  'args': None}}})
-                        notification.buttons = json.dumps(buttons, ensure_ascii=False)
-                        notification.save()
+                    notification = user_class.create_notification(new_offer.to_owner_id, 'Предложение ролевой')
+                    notification.description = f'Пользователь [id{user_info.id}|{user_info.name}] ' \
+                                               f'{t_ext.gender_msg("предожил", "предожила", user_info.is_fem)}' \
+                                               f' вам ролевую, вы можете просмотреть ' \
+                                               f'{t_ext.gender_msg("его", "её", user_info.is_fem)} анкеты.'
+                    notification.create_time = int(time.time())
+                    buttons = list()
+                    profiles = user_class.RpProfile().get_user_profiles(user_message['from_id'])
+                    for pr in profiles:
+                        buttons.append({'label': pr.name,
+                                        'm_id': 'show_player_profile',
+                                        'args': {'profile_id': pr.id,
+                                                 'btn_back': {'label': 'Вернуться к уведомлению',
+                                                              'm_id': 'notification_display',
+                                                              'args': None}}})
+                    notification.buttons = json.dumps(buttons, ensure_ascii=False)
+                    notification.save()
                 else:
-                    offers_dict[user_info.tmp_item_id].actual = True
-                    offers_dict[user_info.tmp_item_id].save()
+                    role_offer.actual = True
+                    role_offer.save()
             else:
-                offers_dict[user_info.tmp_item_id].actual = False
-                offers_dict[user_info.tmp_item_id].save()
+                role_offer.actual = False
+                role_offer.save()
     except Exception as e:
         print('show_player_profile', e)
         pass
 
     message = system.rp_profile_display(user_info.tmp_item_id)
-    offer_to_owner = user_class.RoleOffer().get_offer_to_profile(user_info.id, user_info.tmp_item_id)
+    role_offer = user_class.RoleOffer().get_offer_to_profile(user_info.id, user_info.tmp_item_id)
 
-    if offer_to_owner and offer_to_owner.actual:
+    if role_offer and role_offer.actual:
         button_offer = vk_api.new_button('Отменить предложение',
                                          {'m_id': 'show_player_profile',
                                           'args': {'offer': False, 'btn_back': btn_back}},

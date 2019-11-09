@@ -83,8 +83,9 @@ class RoleOffer(peewee.Model):
         database = db
         primary_key = peewee.CompositeKey('from_owner_id', 'to_owner_id')
 
-    def create_offer(self, from_owner_id, to_owner_id):
+    def create_offer(self, from_owner_id, to_profile_id):
         try:
+            to_owner_id = RpProfile().get_profile(to_profile_id).owner_id
             new_rp_offer = self.create(from_owner_id=from_owner_id,
                                        to_owner_id=to_owner_id)
             return new_rp_offer
@@ -108,8 +109,8 @@ class RoleOffer(peewee.Model):
     def get_offer_to_profile(self, from_user_id, profile_id):
         try:
             to_user_id = RpProfile().get_profile(profile_id).owner_id
-            user_offers = self.select().where((self._schema.model.from_owner_id == from_user_id) &
-                                              (self._schema.model.to_owner_id == to_user_id))
+            user_offers = self.get((self._schema.model.from_owner_id == from_user_id) &
+                                   (self._schema.model.to_owner_id == to_user_id))
             return user_offers
         except self.DoesNotExist:
             return []
@@ -311,7 +312,7 @@ def suit_by_parameter(profile_id, parameter):
         item_list = set(i.item_id for i in search_list if i.is_allowed)
         suit_profiles = parameter.select()\
             .join(parameter.profile_field, on=(parameter.profile == parameter.profile_field.id))\
-            .where(parameter.item_id.in_(item_list) & parameter.is_allowed)
+            .where(parameter.item_id.in_(item_list) & parameter.is_allowed & ~parameter.profile_field.search_preset)
         print('suit_profiles', suit_profiles.sql())
         return suit_profiles
     except parameter.DoesNotExist:
@@ -320,17 +321,21 @@ def suit_by_parameter(profile_id, parameter):
 
 def find_suitable_profiles(profile_id):
     suit_by_setting = suit_by_parameter(profile_id, ProfileSettingList)
-    # suit_by_rp_rating = suit_by_parameter(profile_id, ProfileRpRatingList)
-    # suit_by_gender = suit_by_parameter(profile_id, ProfileGenderList)
-    # suit_by_species = suit_by_parameter(profile_id, ProfileSpeciesList)
+    suit_by_rp_rating = suit_by_parameter(profile_id, ProfileRpRatingList)
+    suit_by_gender = suit_by_parameter(profile_id, ProfileGenderList)
+    suit_by_species = suit_by_parameter(profile_id, ProfileSpeciesList)
 
     suit_profiles = [i.profile for i in suit_by_setting]
+    suit_profiles += [i.profile for i in suit_by_rp_rating if i.profile not in suit_profiles]
+    suit_profiles += [i.profile for i in suit_by_gender if i.profile not in suit_profiles]
+    suit_profiles += [i.profile for i in suit_by_species if i.profile not in suit_profiles]
+
+    user_id = RpProfile().get_profile(profile_id).owner_id
+    user_profiles = RpProfile().get_user_profiles(user_id)
+    suit_profiles = [i for i in suit_profiles if i not in user_profiles]
     print('suit_profiles:', len(suit_profiles))
     for i in suit_profiles:
         print(i.name)
-    # suit_profiles += [i.profile for i in suit_by_rp_rating if i not in suit_profiles]
-    # suit_profiles += [i.profile for i in suit_by_gender if i not in suit_profiles]
-    # suit_profiles += [i.profile for i in suit_by_species if i not in suit_profiles]
     return suit_profiles
     # try:
     #     user_profile = get_rp_profile(profile_id)
