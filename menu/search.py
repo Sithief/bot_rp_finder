@@ -157,7 +157,7 @@ def search_by_preset(user_message):
     pr_buttons = list()
     for pr in suitable_profiles[user_info.list_iter * profiles_per_page:(user_info.list_iter + 1) * profiles_per_page]:
         color = 'default'
-        if pr.id in sent_offers:
+        if pr.owner_id in sent_offers:
             color = 'primary'
             if pr.owner_id in confirmed_offers:
                 color = 'positive'

@@ -272,94 +272,83 @@ def delete_notification(notification_id):
         return False
 
 
-def count_similarity_score(user_profile, player_profile):
+def count_similarity_score(user_parameter_list, parameter, player_profile):
     score = 0
-    user_setting = ProfileSettingList().get_setting_list(user_profile.id)
-    player_setting = ProfileSettingList().get_setting_list(player_profile.id)
+    player_parameter_list = parameter().get_list(player_profile.id)
 
-    user_allowed_setting = set(i.setting_id for i in user_setting if i.is_allowed)
-    player_allowed_setting = set(i.setting_id for i in player_setting if i.is_allowed)
-    user_not_allowed_setting = set(i.setting_id for i in user_setting if not i.is_allowed)
-    player_not_allowed_setting = set(i.setting_id for i in player_setting if not i.is_allowed)
+    user_allowed_parameter = set(i.item for i in user_parameter_list if i.is_allowed)
+    player_allowed_parameter = set(i.item for i in player_parameter_list if i.is_allowed)
+    user_not_allowed_parameter = set(i.item for i in user_parameter_list if not i.is_allowed)
+    player_not_allowed_parameter = set(i.item for i in player_parameter_list if not i.is_allowed)
 
-    score += len(user_allowed_setting & player_allowed_setting)
-    score += len(user_not_allowed_setting & player_not_allowed_setting)
+    score += len(user_allowed_parameter & player_allowed_parameter)
+    score += len(user_not_allowed_parameter & player_not_allowed_parameter)
 
-    score -= len(user_allowed_setting & player_not_allowed_setting)
-    score -= len(user_not_allowed_setting & player_allowed_setting)
-
-    user_rating = ProfileRpRatingList().get_item_list(user_profile.id)
-    player_rating = ProfileRpRatingList().get_item_list(player_profile.id)
-
-    user_allowed_rating = set(i.item_id for i in user_rating if i.is_allowed)
-    player_allowed_rating = set(i.item_id for i in player_rating if i.is_allowed)
-    user_not_allowed_rating = set(i.item_id for i in user_rating if not i.is_allowed)
-    player_not_allowed_rating = set(i.item_id for i in player_rating if not i.is_allowed)
-
-    score += len(user_allowed_rating & player_allowed_rating)
-    score += len(user_not_allowed_rating & player_not_allowed_rating)
-
-    score -= len(user_allowed_rating & player_not_allowed_rating)
-    score -= len(user_not_allowed_rating & player_allowed_rating)
+    score -= len(user_allowed_parameter & player_not_allowed_parameter)
+    score -= len(user_not_allowed_parameter & player_allowed_parameter)
 
     return score
 
 
-def suit_by_parameter(profile_id, parameter):
+def suit_by_parameter(profile_id, parameter, user_profiles):
     try:
         search_list = parameter().get_list(profile_id)
-        # print('search_list', search_list.sql())
         item_list = set(i.item_id for i in search_list if i.is_allowed)
+        if not item_list:
+            return [], []
         suit_profiles = parameter.select()\
             .join(parameter.profile_field, on=(parameter.profile == parameter.profile_field.id))\
-            .where(parameter.item_id.in_(item_list) & parameter.is_allowed & ~parameter.profile_field.search_preset)
-        print('suit_profiles', suit_profiles.sql())
-        return suit_profiles
+            .where(parameter.item_id.in_(item_list) &
+                   parameter.is_allowed &
+                   ~parameter.profile_field.search_preset &
+                   parameter.profile.not_in(user_profiles))
+        # print('suit_profiles', suit_profiles.sql())
+        return search_list, suit_profiles
     except parameter.DoesNotExist:
-        return []
+        return [], []
 
 
 def find_suitable_profiles(profile_id):
-    suit_by_setting = suit_by_parameter(profile_id, ProfileSettingList)
-    suit_by_rp_rating = suit_by_parameter(profile_id, ProfileRpRatingList)
-    suit_by_gender = suit_by_parameter(profile_id, ProfileGenderList)
-    suit_by_species = suit_by_parameter(profile_id, ProfileSpeciesList)
-
-    suit_profiles = [i.profile for i in suit_by_setting]
-    suit_profiles += [i.profile for i in suit_by_rp_rating if i.profile not in suit_profiles]
-    suit_profiles += [i.profile for i in suit_by_gender if i.profile not in suit_profiles]
-    suit_profiles += [i.profile for i in suit_by_species if i.profile not in suit_profiles]
-
+    import time
+    timer = {'start': time.time()}
     user_id = RpProfile().get_profile(profile_id).owner_id
     user_profiles = RpProfile().get_user_profiles(user_id)
-    suit_profiles = [i for i in suit_profiles if i not in user_profiles]
-    print('suit_profiles:', len(suit_profiles))
-    for i in suit_profiles:
-        print(i.name)
-    return suit_profiles
-    # try:
-    #     user_profile = get_rp_profile(profile_id)
-    #     setting_list = [i.setting_id for i in ProfileSettingList().get_list(profile_id) if i.is_allowed]
-    #     suit_by_setting_ids = [i.profile_id for i in
-    #                            ProfileSettingList.select().where((ProfileSettingList._id.in_(setting_list) &
-    #                                                               ProfileSettingList.is_allowed))]
-    #
-    #     rating_list = [i.item_id for i in ProfileRpRatingList().get_item_list(profile_id) if i.is_allowed]
-    #     suit_by_rating_ids = [i.profile_id for i in
-    #                           ProfileRpRatingList.select().where((ProfileRpRatingList.item_id.in_(rating_list) &
-    #                                                               ProfileRpRatingList.is_allowed))]
-    #
-    #     suit_prof_ids = list(set(suit_by_setting_ids + suit_by_rating_ids))
-    #     suitable_profiles = RpProfile.select().where(RpProfile.id.in_(suit_prof_ids) &
-    #                                                  (RpProfile.owner_id != user_profile.owner_id))
-    #
-    #     suitable_profiles_scores = [[profile, count_similarity_score(user_profile, profile)]
-    #                                 for profile in set(suitable_profiles)]
-    #     suitable_profiles_scores.sort(key=lambda x: x[1], reverse=True)
-    #     suitable_profiles = [profile[0] for profile in suitable_profiles_scores]
-    #     return suitable_profiles
-    # except ProfileSettingList.DoesNotExist or RpProfile.DoesNotExist:
-    #     return []
+
+    timer['user_profiles'] = time.time()
+    gender_list, suit_by_gender = suit_by_parameter(profile_id, ProfileGenderList, user_profiles)
+    setting_list, suit_by_setting = suit_by_parameter(profile_id, ProfileSettingList, user_profiles)
+    species_list, suit_by_species = suit_by_parameter(profile_id, ProfileSpeciesList, user_profiles)
+    rp_rating_list, suit_by_rp_rating = suit_by_parameter(profile_id, ProfileRpRatingList, user_profiles)
+
+    timer['suit_by_parameters'] = time.time()
+    suit_profiles = list()
+    for i in suit_by_setting + suit_by_gender + suit_by_species + suit_by_rp_rating:
+        if i.profile not in suit_profiles:
+            suit_profiles.append(i.profile)
+
+    timer['suit_profiles'] = time.time()
+    suit_profiles_score = [{'profile': i,
+                            'score': (count_similarity_score(gender_list, ProfileGenderList, i) +
+                                      count_similarity_score(setting_list, ProfileSettingList, i) +
+                                      count_similarity_score(species_list, ProfileSpeciesList, i) +
+                                      count_similarity_score(rp_rating_list, ProfileRpRatingList, i))}
+                           for i in suit_profiles]
+    timer['profiles_score'] = time.time()
+
+    suit_profiles_score.sort(key=lambda x: x['score'], reverse=True)
+    suit_profiles_sorted = [i['profile'] for i in suit_profiles_score]
+
+    timer['profiles_sort'] = time.time()
+
+    print(f"user_profiles      = {timer['user_profiles'] - timer['start']}\n"
+          f"suit_by_parameters = {timer['suit_by_parameters'] - timer['user_profiles']}\n"
+          f"suit_profiles      = {timer['suit_profiles'] - timer['suit_by_parameters']}\n"
+          f"profiles_score     = {timer['profiles_score'] - timer['suit_profiles']}\n"
+          f"profiles_sort      = {timer['profiles_sort'] - timer['profiles_score']}\n")
+    # print('suit_profiles:', len(suit_profiles_sorted))
+    # for i in suit_profiles_sorted:
+    #     print(i.name)
+    return suit_profiles_sorted
 
 
 def init_db():
