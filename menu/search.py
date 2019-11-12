@@ -30,14 +30,15 @@ def get_menus():
 
 
 def profiles_search(user_message):
-    message = 'Поиск соигроков'
-    # button_by_profile = vk_api.new_button('Найти соигроков подходящих к анкете',
-    #                                       {'m_id': 'choose_profile_to_search', 'args': None})
-    button_by_preset = vk_api.new_button('Найти соигроков по пресету', {'m_id': 'choose_preset_to_search'})
-    button_main = vk_api.new_button('Главное меню', {'m_id': 'main', 'args': None}, 'primary')
-    return {'message': message, 'keyboard': [[button_by_preset],
-                                             # [button_by_profile],
-                                             [button_main]]}
+    # message = 'Поиск соигроков'
+    # # button_by_profile = vk_api.new_button('Найти соигроков подходящих к анкете',
+    # #                                       {'m_id': 'choose_profile_to_search', 'args': None})
+    # button_by_preset = vk_api.new_button('Найти соигроков по пресету', {'m_id': 'choose_preset_to_search'})
+    # button_main = vk_api.new_button('Главное меню', {'m_id': 'main', 'args': None}, 'primary')
+    # return {'message': message, 'keyboard': [[button_by_preset],
+    #                                          # [button_by_profile],
+    #                                          [button_main]]}
+    return choose_preset_to_search(user_message)
 
 
 def choose_preset_to_search(user_message):
@@ -79,7 +80,7 @@ def change_preset(user_message):
     user_info.save()
 
     message['message'] = 'Ваша анкета:\n\n' + message['message']
-    button_main = vk_api.new_button('Главное меню', {'m_id': 'main', 'args': None}, 'primary')
+    button_main = vk_api.new_button('Назад', {'m_id': 'choose_preset_to_search'}, 'primary')
     buttons_change_name = vk_api.new_button('Название', {'m_id': ChangeName().menu_names['change']})
     buttons_change_gender = vk_api.new_button('Пол', {'m_id': ChangeGenderList().menu_names['change']})
     buttons_change_setting = vk_api.new_button('Сеттинг', {'m_id': ChangeSettingList().menu_names['change']})
@@ -179,7 +180,7 @@ def search_by_preset(user_message):
                                                             'args': {'iter': prew_iter}}, prew_color)
     button_next = vk_api.new_button('Следующая страница', {'m_id': 'search_by_preset',
                                                            'args': {'iter': next_iter}}, next_color)
-    button_main = vk_api.new_button('Главное меню', {'m_id': 'main'}, 'primary')
+    button_main = vk_api.new_button('Назад', {'m_id': 'choose_preset_to_search'}, 'primary')
     return {'message': message, 'keyboard': pr_buttons + [[button_prew, button_next], [button_main]]}
 
 
