@@ -32,7 +32,7 @@ def notifications(user_message):
 
 
 def notification_display(user_message):
-    user_info = user_class.get_user(user_message['from_id'])
+    user_info = user_class.User().get_user(user_message['from_id'])
     if user_message['payload']['args'] and 'nt_id' in user_message['payload']['args']:
         user_info.item_id = user_message['payload']['args']['nt_id']
         user_info.save()

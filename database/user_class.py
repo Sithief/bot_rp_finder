@@ -272,12 +272,14 @@ def delete_notification(notification_id):
         return False
 
 
-def count_similarity_score(parameter, user_pr_id, player_pr_id):
-    user_items_ids = parameter.select(parameter.item_id).where((parameter.profile_id == user_pr_id))
-    score = parameter.select()\
-        .where((parameter.profile_id == player_pr_id) &
-               parameter.item_id.in_(user_items_ids) &
-               parameter.is_allowed).count()
+def count_similarity_score(parameter_list, user_pr_id, player_pr_id):
+    score = 0
+    for parameter in parameter_list:
+        user_items_ids = parameter.select(parameter.item_id).where((parameter.profile_id == user_pr_id))
+        score += parameter.select()\
+            .where((parameter.profile_id == player_pr_id) &
+                   parameter.item_id.in_(user_items_ids) &
+                   parameter.is_allowed).count()
     return score
 
 
@@ -326,47 +328,28 @@ def suit_by_parameters(profile_id, parameter_list):
                    & (profile_field.owner_id != user_id))\
             .distinct()
         # print('profiles_list.sql()', profiles_list.sql())
-        return profiles_list
+        return list(profiles_list)
     except tuple(parameter.DoesNotExist for parameter in parameter_list):
         return []
 
 
 def find_suitable_profiles(profile_id):
-    import time
-    timer = dict()
-    timer['start'] = time.time()
     parameters = (
         ProfileGenderList,
         ProfileSettingList,
         ProfileSpeciesList,
         ProfileRpRatingList
     )
-    timer['user_profiles'] = time.time()
 
     suit_profiles = suit_by_parameters(profile_id, parameters)
-    timer['suit_by_parameters'] = time.time()
-    suit_profiles = list(suit_profiles)
-    timer['suit_profiles'] = time.time()
+
     suit_profiles_score = [{'profile': i,
-                            'score': sum([count_similarity_score(parameter, profile_id, i.id)
-                                          for parameter in parameters])}
+                            'score': count_similarity_score(parameters, profile_id, i.id)}
                            for i in suit_profiles]
-    timer['profiles_score'] = time.time()
 
     suit_profiles_score.sort(key=lambda x: x['score'], reverse=True)
     suit_profiles_sorted = [i['profile'] for i in suit_profiles_score]
 
-    timer['profiles_sort'] = time.time()
-
-    print(f"user_profiles      = {timer['user_profiles'] - timer['start']}\n"
-          f"suit_by_parameters = {timer['suit_by_parameters'] - timer['user_profiles']}\n"
-          f"suit_profiles      = {timer['suit_profiles'] - timer['suit_by_parameters']}\n"
-          f"profiles_score     = {timer['profiles_score'] - timer['suit_profiles']}\n"
-          f"profiles_sort      = {timer['profiles_sort'] - timer['profiles_score']}\n")
-
-    # print('suit_profiles:', len(suit_profiles_sorted))
-    # for i in suit_profiles_sorted:
-    #     print(i.name)
     return suit_profiles_sorted
 
 
