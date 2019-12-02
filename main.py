@@ -3,6 +3,8 @@ import time
 import threading
 import queue
 import logging
+import sys
+sys.path.append('../')
 from bot_rp_finder.menu import menu
 from bot_rp_finder.menu.execute_time import Timer
 from bot_rp_finder.vk_api import vk_api, longpoll
