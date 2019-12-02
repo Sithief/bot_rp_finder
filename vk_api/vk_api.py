@@ -14,6 +14,7 @@ class Api(object):
         self.version = version
         self.VK_API = requests.Session()
         logging.info(f'{self.name} gApi started')
+        self.valid = 'response' in self.request_get('utils.getServerTime')
 
     def request_get(self, method, parameters=None):
         if not parameters:

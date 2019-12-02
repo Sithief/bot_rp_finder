@@ -9,7 +9,7 @@ from bot_rp_finder.vk_api import vk_api, longpoll
 from bot_rp_finder.vk_api.Keys import Keys
 from bot_rp_finder.database import user_class
 
-logging.basicConfig(format='%(filename)-15s[LINE:%(lineno)d]# %(levelname)-8s [%(asctime)s]  %(message)s',
+logging.basicConfig(format='%(filename)-25s[LINE:%(lineno)d]# %(levelname)-8s [%(asctime)s]  %(message)s',
                     # level=logging.INFO
                     level=logging.DEBUG
                     )
@@ -17,6 +17,9 @@ logging.basicConfig(format='%(filename)-15s[LINE:%(lineno)d]# %(levelname)-8s [%
 
 if __name__ == '__main__':
     bot_api = vk_api.Api(Keys().get_group_token(), 'main')
+    if not bot_api.valid:
+        logging.error('Токен для VK API не подходит')
+        exit(1)
 
     user_class.init_db()
 
