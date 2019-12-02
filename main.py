@@ -1,5 +1,4 @@
 import time
-# import multiprocessing
 import threading
 import queue
 import logging
@@ -10,6 +9,7 @@ from bot_rp_finder.menu.execute_time import Timer
 from bot_rp_finder.vk_api import vk_api, longpoll
 from bot_rp_finder.vk_api.Keys import Keys
 from bot_rp_finder.database import user_class
+from dropbox_api import dropbox_backup
 
 logging.basicConfig(format='%(filename)-25s[LINE:%(lineno)d]# %(levelname)-8s [%(asctime)s]  %(message)s',
                     # level=logging.INFO
@@ -18,6 +18,7 @@ logging.basicConfig(format='%(filename)-25s[LINE:%(lineno)d]# %(levelname)-8s [%
 
 
 if __name__ == '__main__':
+    dropbox_backup.backup_db()
     bot_api = vk_api.Api(Keys().get_group_token(), 'main')
     if not bot_api.valid:
         logging.error('Токен для VK API не подходит')
@@ -30,7 +31,8 @@ if __name__ == '__main__':
     longpoll_stdout = queue.Queue()
     longpoll_listner = threading.Thread(target=longpoll.listen, args=(longpoll_stdout,))
     longpoll_listner.start()
-    last_message_time = time.time()
+
+    changes_count = 0
 
     timer = Timer()
 
@@ -58,3 +60,11 @@ if __name__ == '__main__':
         if new_messages:
             timer.time_stamp('total')
             timer.output()
+            changes_count += 1
+
+        elif changes_count > 10:
+            changes_count = 0
+            timer.start('dropbox')
+            dropbox_backup.backup_db()
+            timer.time_stamp('dropbox')
+

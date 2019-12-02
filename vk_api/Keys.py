@@ -33,16 +33,16 @@ class Keys:
             db_filename = self.default['db_filename']
             bot_data_dir = self.default['bot_data_dir']
 
-        bot_path = os.path.expanduser(bot_data_dir)
-        if not os.path.exists(bot_path):
-            logging.info(f'Директрия {bot_path} не обнаружена и будет создана')
-            os.mkdir(bot_path)
+        data_path = os.path.expanduser(bot_data_dir)
+        if not os.path.exists(data_path):
+            logging.info(f'Директрия {data_path} не обнаружена и будет создана')
+            os.mkdir(data_path)
 
-        self.__db_filename = os.path.join(bot_path, db_filename)
-        self.__keys_filename = os.path.join(bot_path, keys_filename)
+        self.__db_filename = os.path.join(os.path.realpath(data_path), db_filename)
+        self.__keys_filename = os.path.join(data_path, keys_filename)
 
         if not os.path.exists(self.__keys_filename):
-            logging.info(f'Файл с ключами не найден и будет создан в директории: {bot_path}')
+            logging.info(f'Файл с ключами не найден и будет создан в директории: {data_path}')
             json_keys = json.dumps({'user_token': '',
                                     'group_token': '',
                                     'group_id': 0,
