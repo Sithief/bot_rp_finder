@@ -1,5 +1,7 @@
 import time
-import multiprocessing
+# import multiprocessing
+import threading
+import queue
 import logging
 from bot_rp_finder.menu import menu
 from bot_rp_finder.menu.execute_time import Timer
@@ -18,8 +20,8 @@ if __name__ == '__main__':
 
     user_class.init_db()
 
-    longpoll_stdout = multiprocessing.Queue()
-    longpoll_listner = multiprocessing.Process(target=longpoll.listen, args=(longpoll_stdout,))
+    longpoll_stdout = queue.Queue()
+    longpoll_listner = threading.Thread(target=longpoll.listen, args=(longpoll_stdout,))
     longpoll_listner.start()
     last_message_time = time.time()
 
