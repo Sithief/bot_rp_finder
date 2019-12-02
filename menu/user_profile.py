@@ -177,16 +177,16 @@ class CheckButton:
     def user_choise(self, user_message, user_items_dict):
         args = user_message['payload']['args']
         item_id = self.menu_prefix + 'id'
-        if args[item_id] in user_items_dict:
-            if user_items_dict[args[item_id]].is_allowed:
-                user_items_dict[args[item_id]].is_allowed = False
-                user_items_dict[args[item_id]].save()
+        item_info = self.table_class.additional_field().get_item(args[item_id])
+        if item_info:
+            if args[item_id] in user_items_dict:
+                if user_items_dict[args[item_id]].is_allowed:
+                    user_items_dict[args[item_id]].is_allowed = False
+                    user_items_dict[args[item_id]].save()
+                else:
+                    self.table_class.delete_from_list(args['profile_id'], args[item_id])
             else:
-                self.table_class.delete_from_list(args['profile_id'], args[item_id])
-        else:
-            self.table_class.add(args['profile_id'], args[item_id])
-            item_info = self.table_class.additional_field().get_item(args[item_id])
-            if item_info:
+                self.table_class.add(args['profile_id'], args[item_id])
                 return f'\n\n' \
                        f'Вы добавили: "{item_info.title}"\n' \
                        f'Его описание: {item_info.description}'
@@ -195,15 +195,17 @@ class CheckButton:
     def user_unique_choise(self, user_message, user_items_dict):
         args = user_message['payload']['args']
         item_id = self.menu_prefix + 'id'
-        for actual_item_id in user_items_dict:
-            self.table_class.delete_from_list(args['profile_id'], actual_item_id)
+        item_info = self.table_class.additional_field().get_item(args[item_id])
+        if item_info:
+            for actual_item_id in user_items_dict:
+                self.table_class.delete_from_list(args['profile_id'], actual_item_id)
 
-        if args[item_id] not in user_items_dict:
-            self.table_class.add(args['profile_id'], args[item_id])
-            item_info = self.table_class.additional_field().get_item(args[item_id])
-            return f'\n\n' \
-                   f'Вы добавили: "{item_info.title}"\n' \
-                   f'Его описание: {item_info.description}'
+            if args[item_id] not in user_items_dict:
+                self.table_class.add(args['profile_id'], args[item_id])
+                if item_info:
+                    return f'\n\n' \
+                           f'Вы добавили: "{item_info.title}"\n' \
+                           f'Его описание: {item_info.description}'
         return ''
 
     def item_buttons(self, profile_id, user_items_dict):
@@ -237,17 +239,10 @@ class CheckButton:
 
         if user_message['payload']['args']:
             if self.unique_option:
-                text = self.user_unique_choise(user_message, user_items_dict)
-                if text:
-                    message += text
-                else:
-                    return system.access_error()
+                message += self.user_unique_choise(user_message, user_items_dict)
             else:
                 text = self.user_choise(user_message, user_items_dict)
-                if text:
-                    message += text
-                else:
-                    return system.access_error()
+                message += text
             user_item = self.table_class.get_list(profile_id)
             user_items_dict = {i.item.id: i for i in user_item}
 

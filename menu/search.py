@@ -79,7 +79,7 @@ def change_preset(user_message):
     user_info.menu_id = 'change_preset'
     user_info.save()
 
-    message['message'] = 'Ваша анкета:\n\n' + message['message']
+    message['message'] = 'Пресет для поиска:\n\n' + message['message']
     button_main = vk_api.new_button('Назад', {'m_id': 'choose_preset_to_search'}, 'primary')
     buttons_change_name = vk_api.new_button('Название', {'m_id': ChangeName().menu_names['change']})
     buttons_change_gender = vk_api.new_button('Пол', {'m_id': ChangeGenderList().menu_names['change']})

@@ -4,7 +4,7 @@ from bot_rp_finder.vk_api.Keys import Keys
 
 db_filename = Keys().get_db_filename()
 db = peewee.SqliteDatabase(db_filename, pragmas={'journal_mode': 'wal',
-                                                 'cache_size': -1 * 64000,  # 64MB
+                                                 'cache_size': 64,
                                                  'foreign_keys': 1,
                                                  'ignore_check_constraints': 0,
                                                  'synchronous': 0})
