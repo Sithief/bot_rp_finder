@@ -129,7 +129,7 @@ class Api(object):
         code = '''
 var group_id = API.groups.getById()[0].id;
 var admins = API.groups.getMembers({"group_id": group_id, "filter": "managers"});
-return admins.items@.id;
+return admins.items;
 '''
         admins = self.request_get('execute', {'code': code})
         if 'response' not in admins:

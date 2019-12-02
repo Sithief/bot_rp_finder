@@ -368,6 +368,15 @@ def init_db():
     ProfileSpeciesList.create_table()
 
 
+def update_admins(admin_list):
+    for admin in admin_list:
+        if admin['role'] in ['creator', 'administrator']:
+            user = User().get_user(admin['id'])
+            if user:
+                user.is_admin = True
+                user.save()
+
+
 if __name__ == "__main__":
     # logging.basicConfig(format='%(filename)-15s[LINE:%(lineno)d]# %(levelname)-8s [%(asctime)s]  %(message)s',
     #                     level=logging.INFO)

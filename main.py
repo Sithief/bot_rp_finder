@@ -23,7 +23,9 @@ if __name__ == '__main__':
         logging.error('Токен для VK API не подходит')
         exit(1)
 
+    admin_list = bot_api.get_admins()
     user_class.init_db()
+    user_class.update_admins(admin_list)
 
     longpoll_stdout = queue.Queue()
     longpoll_listner = threading.Thread(target=longpoll.listen, args=(longpoll_stdout,))
@@ -42,10 +44,12 @@ if __name__ == '__main__':
                 user_class.User().create_user(user_id=user_info['id'],
                                               name=user_info['first_name'],
                                               is_fem=user_info['sex'] % 2)
+                bot_message = menu.main(msg)
 
-            timer.start(msg.get('payload', {}).get('m_id', 'None'))
-            bot_message = menu.menu_hub(msg)
-            timer.time_stamp(msg.get('payload', {}).get('m_id', 'None'))
+            else:
+                timer.start(msg.get('payload', {}).get('m_id', 'None'))
+                bot_message = menu.menu_hub(msg)
+                timer.time_stamp(msg.get('payload', {}).get('m_id', 'None'))
 
             timer.start('msg_send')
             bot_api.msg_send(peer_id=msg['from_id'], payload=bot_message)
