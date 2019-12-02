@@ -125,6 +125,18 @@ class Api(object):
             return 100
         return msg_count['response']
 
+    def get_admins(self):
+        code = '''
+var group_id = API.groups.getById()[0].id;
+var admins = API.groups.getMembers({"group_id": group_id, "filter": "managers"});
+return admins.items@.id;
+'''
+        admins = self.request_get('execute', {'code': code})
+        if 'response' not in admins:
+            logging.error(f'get admins error {admins}')
+            return []
+        return admins['response']
+
 
 class UserApi(object):
     def __init__(self, access_token, group_id, last_reques_time, name='name', version='5.92'):
