@@ -2,7 +2,7 @@ import time
 
 
 class FunctionTime:
-    def __init__(self, name, max_times=100):
+    def __init__(self, name, max_times=10000):
         self.name = name
         self.max_times = max_times
         self.times = []
