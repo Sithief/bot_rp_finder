@@ -350,7 +350,7 @@ def get_actions_from_buttons(buttons):
 
 
 def keyboard_from_buttons(buttons):
-    keyboard = {'one_time': False, 'buttons': []}
+    keyboard = {'one_time': True, 'buttons': []}
     for buttons_row in buttons:
         if buttons_row:
             keyboard['buttons'].append([])
