@@ -81,24 +81,27 @@ class LongPoll(vk_api.Api):
 
     def unread(self):
         logging.info(f'unread messages check')
-        message_text = 'Модуль приёма сообщений был перезагружен. Отправьте команду снова.'
+        message_text = 'Модуль приёма сообщений был перезагружен. Будет учтена только последняя команда.'
         unread_msg = self.request_get('messages.getConversations', {'filter': 'unanswered'})
         try:
             unread_msg = [i['last_message'] for i in unread_msg['response']['items']]
             for msg in unread_msg:
+                if 'payload' in msg:
+                    msg['payload'] = json.loads(msg['payload'])
                 sended_message = self.msg_send(msg['peer_id'], {'message': message_text})
                 if not sended_message:
                     logging.warning(f'unread messages send {sended_message}')
+            return unread_msg
 
         except Exception as error_msg:
             logging.error(f'unread_msg: {unread_msg} error: {error_msg}')
             self.new_long_poll_server()
-            return
+            return []
 
 
 def listen(stdout):
     bot_api = LongPoll(Keys().get_group_token(), Keys().get_group_id(), 'long_poll')
-    bot_api.unread()
+    stdout.put(bot_api.unread())
     bot_api.new_long_poll_server()
     while 1:
         try:
