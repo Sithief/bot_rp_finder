@@ -42,10 +42,11 @@ def profiles_search(user_message):
 
 
 def choose_preset_to_search(user_message):
-    message = 'Выберите один из списка ваших поисковых пресетов'
+    message = 'Выберите один из списка ваших поисковых пресетов:'
     profiles = db_api.RpProfile().get_user_profiles(user_message['from_id'], search_preset=True)
     pr_buttons = list()
     for num, pr in enumerate(profiles):
+        message += f'\n{num+1}){pr.name}'
         pr_buttons.append([vk_api.new_button(pr.name,
                                              {'m_id': 'change_preset',
                                               'args': {'item_id': pr.id}})])

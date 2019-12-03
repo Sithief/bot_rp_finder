@@ -29,6 +29,7 @@ def user_profiles(user_message):
     message = 'Список ваших анкет:'
     pr_buttons = list()
     for num, pr in enumerate(profiles):
+        message += f'\n{num+1}){pr.name}'
         pr_buttons.append([vk_api.new_button(pr.name,
                                              {'m_id': 'change_profile',
                                               'args': {'profile_id': pr.id}})])
