@@ -6,7 +6,7 @@ from bot_rp_finder.vk_api import vk_api
 
 
 def load_from_old_db(filename):
-    json_fields = ['rating', 'race', 'theme', 'Rtheme', 'gender', 'image']
+    json_fields = ['rating', 'race', 'theme', 'gender']
     connect = sqlite3.connect(filename)
     cursor = connect.cursor()
     cursor.execute("SELECT * FROM user")
@@ -46,6 +46,7 @@ def write_to_new_db(old_data):
         rp_profile.name = user_info['first_name']
         rp_profile.description = user['about_caracter'] + '\n' + user['story']
         rp_profile.arts = user['image']
+        rp_profile.create_date = int(float(user['create_time']))
         rp_profile.save()
 
         additional_field(rp_profile, user['rating'], db_api.ProfileRpRatingList)

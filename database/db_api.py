@@ -1,6 +1,7 @@
 import peewee
 import logging
 import json
+import time
 from bot_rp_finder.vk_api.Keys import Keys
 
 db_filename = Keys().get_db_filename()
@@ -33,8 +34,11 @@ class User(peewee.Model):
             return False
 
     def create_user(self, user_id, name, is_fem):
-        new_user = self.create(id=user_id, name=name, is_fem=is_fem)
-        return new_user
+        try:
+            new_user = self.create(id=user_id, name=name, is_fem=is_fem)
+            return new_user
+        except peewee.IntegrityError:
+            return self.get_user(user_id)
 
 
 class RpProfile(peewee.Model):
@@ -43,6 +47,7 @@ class RpProfile(peewee.Model):
     name = peewee.CharField(default='Не указано')
     description = peewee.CharField(default='')
     arts = peewee.CharField(default='[]')
+    create_date = peewee.IntegerField(default=0)
 
     class Meta:
         database = db
@@ -63,7 +68,7 @@ class RpProfile(peewee.Model):
             return []
 
     def create_profile(self, user_id, search_preset=False):
-        new_rp_profile = self.create(owner_id=user_id, search_preset=search_preset)
+        new_rp_profile = self.create(owner_id=user_id, search_preset=search_preset, create_date=int(time.time()))
         return new_rp_profile
 
     def delete_profile(self, profile_id):
@@ -334,7 +339,7 @@ def get_suit_profiles(profile_id, parameter, unsuit_profiles):
     return suit_profiles
 
 
-def suit_by_parameters(profile_id, parameter_list):
+def suit_by_parameters(profile_id, parameter_list, max_profiles=40):
     try:
         unsuit_profiles = get_unsuit_profiles(profile_id, parameter_list[0])
         for parameter in parameter_list[1:]:
@@ -353,7 +358,8 @@ def suit_by_parameters(profile_id, parameter_list):
             .where(profile_field.id.in_(suit_profiles)
                    & ~profile_field.search_preset
                    & (profile_field.owner_id != user_id))\
-            .distinct()
+            .order_by(profile_field.create_date.desc())\
+            .limit(max_profiles)
         # print('profiles_list.sql()', profiles_list.sql())
         return list(profiles_list)
     except tuple(parameter.DoesNotExist for parameter in parameter_list):
