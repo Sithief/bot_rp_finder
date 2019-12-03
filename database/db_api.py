@@ -118,7 +118,7 @@ class RoleOffer(peewee.Model):
 
 
 class AdditionalField(peewee.Model):
-    title = peewee.CharField(default='Не указано')
+    title = peewee.CharField(default='Не указано', unique=True)
     description = peewee.CharField(default='Не указано')
 
     class Meta:

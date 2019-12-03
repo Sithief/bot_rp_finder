@@ -21,6 +21,17 @@ def load_from_old_db(filename):
     return users_info
 
 
+def additional_field(rp_profile, old_list, orm_class):
+    for item in old_list:
+        if item not in [i.title for i in orm_class().additional_field().get_item_list()]:
+            new_item = orm_class().additional_field().create_item()
+            new_item.title = item
+            new_item.save()
+    item_list = [i for i in orm_class().additional_field().get_item_list() if i.title in old_list]
+    for item in item_list:
+        orm_class().add(rp_profile.id, item.id)
+
+
 def write_to_new_db(old_data):
     db_api.init_db()
     for num, user in enumerate(old_data):
@@ -37,6 +48,11 @@ def write_to_new_db(old_data):
         rp_profile.arts = user['image']
         rp_profile.save()
 
+        additional_field(rp_profile, user['rating'], db_api.ProfileRpRatingList)
+        additional_field(rp_profile, user['theme'], db_api.ProfileSettingList)
+        additional_field(rp_profile, user['gender'], db_api.ProfileGenderList)
+        additional_field(rp_profile, user['race'], db_api.ProfileSpeciesList)
+
         print(f'write {num+1}/{len(old_data)}')
 
 
@@ -49,4 +65,4 @@ if __name__ == '__main__':
     old_info = load_from_old_db('../../bot_data/RPF.db')
     print('old data loaded')
     print('write to new db')
-    write_to_new_db(old_info[:10])
+    write_to_new_db(old_info[:])
