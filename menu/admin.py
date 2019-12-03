@@ -1,6 +1,6 @@
 import logging
 from bot_rp_finder.vk_api import vk_api
-from bot_rp_finder.database import user_class
+from bot_rp_finder.database import db_api
 from bot_rp_finder.menu import system
 
 
@@ -65,7 +65,7 @@ class AdditionalField:
         return self.menu_ids
 
     def init(self, user_message):
-        self.user_info = user_class.User().get_user(user_message['from_id'])
+        self.user_info = db_api.User().get_user(user_message['from_id'])
 
     def create(self, user_message):
         new_item = self.table_class.create_item()
@@ -184,20 +184,20 @@ class AdditionalField:
 
 
 class SettingConfiguration(AdditionalField):
-    table_class = user_class.SettingList()
+    table_class = db_api.SettingList()
     menu_prefix = 'admin_setting_'
 
 
 class RpRatingConfiguration(AdditionalField):
-    table_class = user_class.RpRating()
+    table_class = db_api.RpRating()
     menu_prefix = 'admin_rp_rating_'
 
 
 class GenderConfiguration(AdditionalField):
-    table_class = user_class.Gender()
+    table_class = db_api.Gender()
     menu_prefix = 'admin_gender_'
 
 
 class SpeciesConfiguration(AdditionalField):
-    table_class = user_class.Species()
+    table_class = db_api.Species()
     menu_prefix = 'admin_species_'

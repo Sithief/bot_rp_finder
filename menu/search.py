@@ -2,7 +2,7 @@ import time
 import json
 import logging
 from bot_rp_finder.vk_api import vk_api
-from bot_rp_finder.database import user_class
+from bot_rp_finder.database import db_api
 from bot_rp_finder.menu import system
 from bot_rp_finder.menu import user_profile
 from bot_rp_finder.menu import text_extension as t_ext
@@ -43,7 +43,7 @@ def profiles_search(user_message):
 
 def choose_preset_to_search(user_message):
     message = 'Выберите один из списка ваших поисковых пресетов'
-    profiles = user_class.RpProfile().get_user_profiles(user_message['from_id'], search_preset=True)
+    profiles = db_api.RpProfile().get_user_profiles(user_message['from_id'], search_preset=True)
     pr_buttons = list()
     for num, pr in enumerate(profiles):
         pr_buttons.append([vk_api.new_button(pr.name,
@@ -60,15 +60,15 @@ def choose_preset_to_search(user_message):
 
 
 def create_preset(user_message):
-    search_preset = user_class.RpProfile().create_profile(user_message['from_id'], search_preset=True)
-    user_info = user_class.User().get_user(user_message['from_id'])
+    search_preset = db_api.RpProfile().create_profile(user_message['from_id'], search_preset=True)
+    user_info = db_api.User().get_user(user_message['from_id'])
     user_info.item_id = search_preset.id
     user_info.save()
     return change_preset(user_message)
 
 
 def change_preset(user_message):
-    user_info = user_class.User().get_user(user_message['from_id'])
+    user_info = db_api.User().get_user(user_message['from_id'])
 
     try:
         user_info.item_id = user_message['payload']['args']['item_id']
@@ -108,22 +108,22 @@ class PresetList(user_profile.CheckButton):
 
 
 class ChangeSettingList(PresetList):
-    table_class = user_class.ProfileSettingList()
+    table_class = db_api.ProfileSettingList()
     menu_prefix = 'preset_setting_'
 
 
 class ChangeRpRatingList(PresetList):
-    table_class = user_class.ProfileRpRatingList()
+    table_class = db_api.ProfileRpRatingList()
     menu_prefix = 'preset_rp_rating_'
 
 
 class ChangeSpeciesList(PresetList):
-    table_class = user_class.ProfileSpeciesList()
+    table_class = db_api.ProfileSpeciesList()
     menu_prefix = 'preset_species_'
 
 
 class ChangeGenderList(PresetList):
-    table_class = user_class.ProfileGenderList()
+    table_class = db_api.ProfileGenderList()
     menu_prefix = 'preset_gender_'
 
 
@@ -136,22 +136,22 @@ class ChangeName(user_profile.InputText):
     message_to_user = 'Введите название пресета'
 
     def update_db(self, text):
-        rp_profile = user_class.RpProfile().get_profile(self.user_info.item_id)
+        rp_profile = db_api.RpProfile().get_profile(self.user_info.item_id)
         rp_profile.name = text
         rp_profile.save()
 
 
 def search_by_preset(user_message):
     profiles_per_page = 4
-    user_info = user_class.User().get_user(user_message['from_id'])
+    user_info = db_api.User().get_user(user_message['from_id'])
     if user_message['payload']['args'] and 'iter' in user_message['payload']['args']:
         user_info.list_iter = user_message['payload']['args']['iter']
         user_info.save()
 
-    suitable_profiles = user_class.find_suitable_profiles(user_info.item_id)
+    suitable_profiles = db_api.find_suitable_profiles(user_info.item_id)
 
-    sent_offers = [pr.to_owner_id for pr in user_class.RoleOffer().get_offers_from_user(user_info.id) if pr.actual]
-    confirmed_offers = [pr.from_owner_id for pr in user_class.RoleOffer().get_offers_to_user(user_info.id) if pr.actual]
+    sent_offers = [pr.to_owner_id for pr in db_api.RoleOffer().get_offers_from_user(user_info.id) if pr.actual]
+    confirmed_offers = [pr.from_owner_id for pr in db_api.RoleOffer().get_offers_to_user(user_info.id) if pr.actual]
     message = 'Список подходящих анкет.\n' \
               'Синим отправленные предложения.\n' \
               'Зелёным - взаимные предложения.'
@@ -246,7 +246,7 @@ def search_by_preset(user_message):
 
 
 def show_player_profile(user_message):
-    user_info = user_class.User().get_user(user_message['from_id'])
+    user_info = db_api.User().get_user(user_message['from_id'])
     if 'profile_id' in user_message['payload']['args']:
         user_info.tmp_item_id = user_message['payload']['args']['profile_id']
         user_info.save()
@@ -259,18 +259,18 @@ def show_player_profile(user_message):
 
     try:
         if 'offer' in user_message['payload']['args']:
-            role_offer = user_class.RoleOffer().get_offer_to_profile(user_info.id, user_info.tmp_item_id)
+            role_offer = db_api.RoleOffer().get_offer_to_profile(user_info.id, user_info.tmp_item_id)
             if user_message['payload']['args']['offer']:
                 if not role_offer:
-                    new_offer = user_class.RoleOffer().create_offer(user_info.id, user_info.tmp_item_id)
-                    notification = user_class.create_notification(new_offer.to_owner_id, 'Предложение ролевой')
+                    new_offer = db_api.RoleOffer().create_offer(user_info.id, user_info.tmp_item_id)
+                    notification = db_api.create_notification(new_offer.to_owner_id, 'Предложение ролевой')
                     notification.description = f'Пользователь [id{user_info.id}|{user_info.name}] ' \
                                                f'{t_ext.gender_msg("предожил", "предожила", user_info.is_fem)}' \
                                                f' вам ролевую, вы можете просмотреть ' \
                                                f'{t_ext.gender_msg("его", "её", user_info.is_fem)} анкеты.'
                     notification.create_time = int(time.time())
                     buttons = list()
-                    profiles = user_class.RpProfile().get_user_profiles(user_message['from_id'])
+                    profiles = db_api.RpProfile().get_user_profiles(user_message['from_id'])
                     for pr in profiles:
                         buttons.append({'label': pr.name,
                                         'm_id': 'show_player_profile',
@@ -291,7 +291,7 @@ def show_player_profile(user_message):
         pass
 
     message = system.rp_profile_display(user_info.tmp_item_id)
-    role_offer = user_class.RoleOffer().get_offer_to_profile(user_info.id, user_info.tmp_item_id)
+    role_offer = db_api.RoleOffer().get_offer_to_profile(user_info.id, user_info.tmp_item_id)
 
     if role_offer and role_offer.actual:
         button_offer = vk_api.new_button('Отменить предложение',

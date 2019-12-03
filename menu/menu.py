@@ -1,5 +1,5 @@
 from bot_rp_finder.vk_api import vk_api
-from bot_rp_finder.database import user_class
+from bot_rp_finder.database import db_api
 from bot_rp_finder.menu import system, admin, user_profile, search, notification
 
 # TODO сделать сортировку уведомлений по дате, разделение на страницы и ограничение количества уведомлений на человека
@@ -19,12 +19,12 @@ def menu_hub(user_message):
         else:
             return system.empty_func(user_message)
     else:
-        user_info = user_class.User().get_user(user_message['from_id'])
+        user_info = db_api.User().get_user(user_message['from_id'])
         return menus[user_info.menu_id](user_message)
 
 
 def main(user_message):
-    user_info = user_class.User().get_user(user_message['from_id'])
+    user_info = db_api.User().get_user(user_message['from_id'])
     user_info.menu_id = 'main'
     user_info.item_id = -1
     user_info.tmp_item_id = -1
@@ -38,7 +38,7 @@ def main(user_message):
     if user_info.is_admin:
         admin_button = [vk_api.new_button('Меню админа', {'m_id': 'admin_menu'})]
 
-    notifications_list = user_class.get_user_notifications(user_message['from_id'])
+    notifications_list = db_api.get_user_notifications(user_message['from_id'])
     notification_count = len([i for i in notifications_list if not i.is_read])
     notifications_label = 'Мои Уведомления' + (f' ({notification_count})' if notification_count else '')
     notifications_color = 'positive' if notification_count else 'default'

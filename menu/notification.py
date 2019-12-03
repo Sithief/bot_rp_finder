@@ -1,7 +1,7 @@
 import time
 import json
 from bot_rp_finder.vk_api import vk_api
-from bot_rp_finder.database import user_class
+from bot_rp_finder.database import db_api
 from bot_rp_finder.menu import system
 
 
@@ -16,7 +16,7 @@ def get_menus():
 
 
 def notifications(user_message):
-    notifications_list = user_class.get_user_notifications(user_message['from_id'])
+    notifications_list = db_api.get_user_notifications(user_message['from_id'])
     message = 'Список уведомлений'
     nt_buttons = list()
     for num, nt in enumerate(notifications_list):
@@ -32,12 +32,12 @@ def notifications(user_message):
 
 
 def notification_display(user_message):
-    user_info = user_class.User().get_user(user_message['from_id'])
+    user_info = db_api.User().get_user(user_message['from_id'])
     if user_message['payload']['args'] and 'nt_id' in user_message['payload']['args']:
         user_info.item_id = user_message['payload']['args']['nt_id']
         user_info.save()
 
-    nt_info = user_class.get_notification(user_info.item_id)
+    nt_info = db_api.get_notification(user_info.item_id)
     if not nt_info:
         return system.access_error()
 

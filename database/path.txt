@@ -1,0 +1,1 @@
+{"keys_filename": "keys.txt", "db_filename": "bot_data.db", "bot_data_dir": "../../bot_data"}

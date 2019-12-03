@@ -7,7 +7,7 @@ from bot_rp_finder.menu import menu
 from bot_rp_finder.menu.execute_time import Timer
 from bot_rp_finder.vk_api import vk_api, longpoll
 from bot_rp_finder.vk_api.Keys import Keys
-from bot_rp_finder.database import user_class
+from bot_rp_finder.database import db_api
 from bot_rp_finder.dropbox_api import dropbox_backup
 
 
@@ -44,8 +44,8 @@ if __name__ == '__main__':
         exit(1)
 
     admin_list = bot_api.get_admins()
-    user_class.init_db()
-    user_class.update_admins(admin_list)
+    db_api.init_db()
+    db_api.update_admins(admin_list)
 
     longpoll_stdout = queue.Queue()
     longpoll_listner = threading.Thread(target=longpoll.listen, args=(longpoll_stdout,))
@@ -60,11 +60,11 @@ if __name__ == '__main__':
         timer.start('total')
         for msg in new_messages:
             print('usr msg:', msg)
-            if not user_class.User().get_user(msg['from_id']):
+            if not db_api.User().get_user(msg['from_id']):
                 user_info = bot_api.get_user_info(msg['from_id'])
-                user_class.User().create_user(user_id=user_info['id'],
-                                              name=user_info['first_name'],
-                                              is_fem=user_info['sex'] % 2)
+                db_api.User().create_user(user_id=user_info['id'],
+                                          name=user_info['first_name'],
+                                          is_fem=user_info['sex'] % 2)
                 bot_message = menu.main(msg)
 
             else:

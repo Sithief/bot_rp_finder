@@ -1,7 +1,7 @@
 import json
 import logging
 from bot_rp_finder.vk_api import vk_api
-from bot_rp_finder.database import user_class
+from bot_rp_finder.database import db_api
 
 
 def get_menus():
@@ -77,7 +77,7 @@ def get_profile_parameter(db_table, profile_id):
 
 
 def rp_profile_display(profile_id):
-    rp_profile = user_class.RpProfile().get_profile(profile_id)
+    rp_profile = db_api.RpProfile().get_profile(profile_id)
     if not rp_profile:
         return access_error()
     profile = dict({'message': '', 'attachment': ''})
@@ -86,25 +86,25 @@ def rp_profile_display(profile_id):
     else:
         profile['message'] += f'Имя: {rp_profile.name}\n'
 
-    gender_list, gender_ban_list = get_profile_parameter(user_class.ProfileGenderList(), profile_id)
+    gender_list, gender_ban_list = get_profile_parameter(db_api.ProfileGenderList(), profile_id)
     if gender_list:
         profile['message'] += f'Пол: {", ".join(gender_list)}\n'
     if gender_ban_list and rp_profile.search_preset:
         profile['message'] += f'Нежелательный пол: {", ".join(gender_ban_list)}\n'
 
-    species_list, species_ban_list = get_profile_parameter(user_class.ProfileSpeciesList(), profile_id)
+    species_list, species_ban_list = get_profile_parameter(db_api.ProfileSpeciesList(), profile_id)
     if species_list:
         profile['message'] += f'Вид: {", ".join(species_list)}\n'
     if species_ban_list and rp_profile.search_preset:
         profile['message'] += f'Нежелательный вид {", ".join(species_ban_list)}\n'
 
-    want_rating_list, unwant_rating_list = get_profile_parameter(user_class.ProfileRpRatingList(), profile_id)
+    want_rating_list, unwant_rating_list = get_profile_parameter(db_api.ProfileRpRatingList(), profile_id)
     if want_rating_list:
         profile['message'] += f'Желательный рейтинг: {", ".join(want_rating_list)}\n'
     if unwant_rating_list:
         profile['message'] += f'Нежелательный рейтинг: {", ".join(unwant_rating_list)}\n'
 
-    want_setting_list, unwant_setting_list = get_profile_parameter(user_class.ProfileSettingList(), profile_id)
+    want_setting_list, unwant_setting_list = get_profile_parameter(db_api.ProfileSettingList(), profile_id)
     if want_setting_list:
         profile['message'] += f'Желательный сеттинг: {", ".join(want_setting_list)}\n'
     if unwant_setting_list:
@@ -117,7 +117,7 @@ def rp_profile_display(profile_id):
 
 
 def empty_func(user_message):
-    user_info = user_class.User().get_user(user_message['from_id'])
+    user_info = db_api.User().get_user(user_message['from_id'])
     message = 'Этого меню еще нет, но раз вы сюда пришли, вот вам монетка!'
     user_info.money += 1
     user_info.save()
@@ -130,7 +130,7 @@ class InputText:
 
     def __init__(self, user_id, next_menu, prew_menu):
         self.user_id = user_id
-        self.user_info = user_class.User().get_user(user_id)
+        self.user_info = db_api.User().get_user(user_id)
         self.next_menu = next_menu
         self.prew_menu = prew_menu
 
@@ -171,7 +171,7 @@ class InputText:
 
 class ItemMenu:
     def __init__(self, user_id, table_class, prew_menu):
-        self.user_info = user_class.User().get_user(user_id)
+        self.user_info = db_api.User().get_user(user_id)
         self.table_class = table_class
         self.prew_menu = prew_menu
 

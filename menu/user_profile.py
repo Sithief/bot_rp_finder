@@ -1,7 +1,7 @@
 import json
 import logging
 from bot_rp_finder.vk_api import vk_api
-from bot_rp_finder.database import user_class
+from bot_rp_finder.database import db_api
 from bot_rp_finder.menu import system
 
 genders = ['Мужской', 'Женский', 'Не указано']
@@ -25,7 +25,7 @@ def get_menus():
 
 
 def user_profiles(user_message):
-    profiles = user_class.RpProfile().get_user_profiles(user_message['from_id'])
+    profiles = db_api.RpProfile().get_user_profiles(user_message['from_id'])
     message = 'Список ваших анкет:'
     pr_buttons = list()
     for num, pr in enumerate(profiles):
@@ -44,18 +44,18 @@ def user_profiles(user_message):
 
 
 def create_profile(user_message):
-    rp_profile = user_class.RpProfile().create_profile(user_message['from_id'])
-    user_info = user_class.User().get_user(user_message['from_id'])
+    rp_profile = db_api.RpProfile().create_profile(user_message['from_id'])
+    user_info = db_api.User().get_user(user_message['from_id'])
     user_info.item_id = rp_profile.id
     user_info.save()
     return change_profile(user_message)
 
 
 def delete_profile(user_message):
-    user_info = user_class.User().get_user(user_message['from_id'])
+    user_info = db_api.User().get_user(user_message['from_id'])
     try:
-        profile = user_class.RpProfile().get_profile(user_info.item_id).name
-        if user_class.RpProfile().delete_profile(user_info.item_id):
+        profile = db_api.RpProfile().get_profile(user_info.item_id).name
+        if db_api.RpProfile().delete_profile(user_info.item_id):
             message = f'Ваша анкета "{profile}" успешно удалена.'
         else:
             message = f'Во время удаления анкеты произошла ошибка, попробуйте повторить запрос через некоторое время.'
@@ -67,7 +67,7 @@ def delete_profile(user_message):
 
 
 def change_profile(user_message):
-    user_info = user_class.User().get_user(user_message['from_id'])
+    user_info = db_api.User().get_user(user_message['from_id'])
 
     try:
         user_info.item_id = user_message['payload']['args']['profile_id']
@@ -111,7 +111,7 @@ class InputText:
     message_to_user = 'Введите текст'
 
     def update_db(self, text):
-        rp_profile = user_class.RpProfile().get_profile(self.user_info.item_id)
+        rp_profile = db_api.RpProfile().get_profile(self.user_info.item_id)
         rp_profile.name = text
         rp_profile.save()
 
@@ -129,7 +129,7 @@ class InputText:
         return self.menu_ids
 
     def init(self, user_message):
-        self.user_info = user_class.User().get_user(user_message['from_id'])
+        self.user_info = db_api.User().get_user(user_message['from_id'])
 
     def change(self, user_message):
         self.init(user_message)
@@ -172,7 +172,7 @@ class CheckButton:
         return self.menu_ids
 
     def init(self, user_message):
-        self.user_info = user_class.User().get_user(user_message['from_id'])
+        self.user_info = db_api.User().get_user(user_message['from_id'])
 
     def user_choise(self, user_message, user_items_dict):
         args = user_message['payload']['args']
@@ -257,24 +257,24 @@ class ProfileList(CheckButton):
 
 
 class ChangeSettingList(ProfileList):
-    table_class = user_class.ProfileSettingList()
+    table_class = db_api.ProfileSettingList()
     menu_prefix = 'profile_setting_'
 
 
 class ChangeRpRatingList(ProfileList):
-    table_class = user_class.ProfileRpRatingList()
+    table_class = db_api.ProfileRpRatingList()
     menu_prefix = 'profile_rp_rating_'
 
 
 class ChangeSpeciesList(ProfileList):
     unique_option = True
-    table_class = user_class.ProfileSpeciesList()
+    table_class = db_api.ProfileSpeciesList()
     menu_prefix = 'profile_species_'
 
 
 class ChangeGenderList(ProfileList):
     unique_option = True
-    table_class = user_class.ProfileGenderList()
+    table_class = db_api.ProfileGenderList()
     menu_prefix = 'profile_gender_'
 
 
@@ -290,7 +290,7 @@ class ChangeName(ChangeProfileText):
     message_to_user = 'Введите имя персонажа'
 
     def update_db(self, text):
-        rp_profile = user_class.RpProfile().get_profile(self.user_info.item_id)
+        rp_profile = db_api.RpProfile().get_profile(self.user_info.item_id)
         rp_profile.name = text
         rp_profile.save()
 
@@ -301,13 +301,13 @@ class ChangeDescription(ChangeProfileText):
     message_to_user = 'Введите описание персонажа'
 
     def update_db(self, text):
-        rp_profile = user_class.RpProfile().get_profile(self.user_info.item_id)
+        rp_profile = db_api.RpProfile().get_profile(self.user_info.item_id)
         rp_profile.description = text
         rp_profile.save()
 
 
 def change_images(user_message):
-    user_info = user_class.User().get_user(user_message['from_id'])
+    user_info = db_api.User().get_user(user_message['from_id'])
     user_info.menu_id = 'save_images'
     user_info.save()
     message = 'Отправьте до 7 изображений для анкеты.\n' \
@@ -341,8 +341,8 @@ def save_images(user_message):
         message = f'Это не слишком похоже на подходящие для анкеты изображения. Попробуйте загрузить заново.'
         return {'message': message, 'keyboard': [[button_return, button_try_again]]}
 
-    user_info = user_class.User().get_user(user_message['from_id'])
-    rp_profile = user_class.RpProfile().get_profile(user_info.item_id)
+    user_info = db_api.User().get_user(user_message['from_id'])
+    rp_profile = db_api.RpProfile().get_profile(user_info.item_id)
     rp_profile.arts = json.dumps(images, ensure_ascii=False)
     rp_profile.save()
     return change_profile(user_message)
