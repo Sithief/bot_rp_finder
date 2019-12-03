@@ -1,4 +1,3 @@
-import time
 import threading
 import queue
 import logging
@@ -9,15 +8,35 @@ from bot_rp_finder.menu.execute_time import Timer
 from bot_rp_finder.vk_api import vk_api, longpoll
 from bot_rp_finder.vk_api.Keys import Keys
 from bot_rp_finder.database import user_class
-from dropbox_api import dropbox_backup
+from bot_rp_finder.dropbox_api import dropbox_backup
 
-logging.basicConfig(format='%(filename)-25s[LINE:%(lineno)d]# %(levelname)-8s [%(asctime)s]  %(message)s',
-                    # level=logging.INFO
-                    level=logging.DEBUG
-                    )
+
+def init_logging():
+    logging.basicConfig(
+        format='%(filename)-25s[LINE:%(lineno)d]# %(levelname)-8s [%(asctime)s]  %(message)s',
+        # level=logging.INFO,
+        level=logging.DEBUG,
+        datefmt='%m-%d %H:%M',
+        filename='log/bot.log',
+        filemode='w'
+    )
+    console = logging.StreamHandler()
+    console.setLevel(logging.INFO)
+    formatter = logging.Formatter('%(name)-12s: %(levelname)-8s %(message)s')
+    console.setFormatter(formatter)
+    logging.getLogger('').addHandler(console)
+
+
+def foo(exctype, value, tb):
+    import logging
+    init_logging()
+    logging.critical(f'EXCEPTION: Type: {exctype}, Value: {value}')
+    longpoll_listner.join(timeout=1)
 
 
 if __name__ == '__main__':
+    init_logging()
+    sys.excepthook = foo
     dropbox_backup.backup_db()
     bot_api = vk_api.Api(Keys().get_group_token(), 'main')
     if not bot_api.valid:
