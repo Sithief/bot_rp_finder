@@ -14,7 +14,9 @@ def menu_hub(user_message):
     menus.update(admin.get_menus())
 
     if 'payload' in user_message:
-        if 'm_id' in user_message['payload'] and user_message['payload']['m_id'] in menus:
+        if not db_api.AvailableActions().is_action_available(user_message['from_id'], user_message['payload']):
+            return system.access_error()
+        elif 'm_id' in user_message['payload'] and user_message['payload']['m_id'] in menus:
             return menus[user_message['payload']['m_id']](user_message)
         else:
             return system.empty_func(user_message)

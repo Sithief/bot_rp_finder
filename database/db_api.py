@@ -1,5 +1,6 @@
 import peewee
 import logging
+import json
 from bot_rp_finder.vk_api.Keys import Keys
 
 db_filename = Keys().get_db_filename()
@@ -242,6 +243,32 @@ class Notification(peewee.Model):
         database = db
 
 
+class AvailableActions(peewee.Model):
+    user_id = peewee.IntegerField(primary_key=True)
+    actions = peewee.CharField()
+
+    class Meta:
+        database = db
+
+    def get_actions(self, user_id):
+        try:
+            action_list = self.get(self._schema.model.user_id == user_id)
+            return action_list
+        except self.DoesNotExist:
+            action_list = self.create(user_id=user_id, actions='[]')
+            return action_list
+
+    def update_actions(self, user_id, action_list):
+        user_actions = self.get_actions(user_id)
+        user_actions.actions = json.dumps(action_list, ensure_ascii=False)
+        user_actions.save()
+
+    def is_action_available(self, user_id, action):
+        user_actions = self.get_actions(user_id)
+        available_actions = json.loads(user_actions.actions)
+        return action in available_actions
+
+
 def create_notification(owner_id, title):
     new_notification = Notification.create(owner_id=owner_id, title=title)
     return new_notification
@@ -366,6 +393,7 @@ def init_db():
     ProfileGenderList.create_table()
     Species.create_table()
     ProfileSpeciesList.create_table()
+    AvailableActions.create_table()
 
 
 def update_admins(admin_list):

@@ -1,6 +1,7 @@
 import threading
 import queue
 import logging
+import traceback
 import sys
 sys.path.append('../')
 from bot_rp_finder.menu import menu
@@ -31,7 +32,8 @@ def foo(exctype, value, tb):
     import logging
     init_logging()
     logging.critical(f'EXCEPTION: Type: {exctype}, Value: {value}')
-    longpoll_listner.join(timeout=1)
+    with open('log/bot_errors.log', 'w') as error_file:
+        traceback.print_exception(exctype, value, tb, file=error_file)
 
 
 if __name__ == '__main__':
@@ -72,6 +74,8 @@ if __name__ == '__main__':
                 bot_message = menu.menu_hub(msg)
                 timer.time_stamp(msg.get('payload', {}).get('m_id', 'None'))
 
+            actions = vk_api.get_actions_from_buttons(bot_message['keyboard'])
+            db_api.AvailableActions().update_actions(msg['from_id'], actions)
             timer.start('msg_send')
             bot_api.msg_send(peer_id=msg['from_id'], payload=bot_message)
             timer.time_stamp('msg_send')

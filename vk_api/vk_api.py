@@ -336,18 +336,27 @@ def new_button(label, button, color='default'):
     if 'args' not in button:
         button['args'] = None
     return {'action': {'type': 'text',
-                       'payload': json.dumps(button, ensure_ascii=False),
+                       'payload': button,
                        'label': label},
             'color': color}
+
+
+def get_actions_from_buttons(buttons):
+    actions = []
+    for buttons_row in buttons:
+        for button in buttons_row:
+            actions.append(button['action']['payload'])
+    return actions
 
 
 def keyboard_from_buttons(buttons):
     keyboard = {'one_time': False, 'buttons': []}
     for buttons_row in buttons:
-        if len(buttons_row) > 4:
-            while len(buttons_row):
-                keyboard['buttons'].append(buttons_row[:4])
-                buttons_row = buttons_row[4:]
-        elif len(buttons_row) > 0:
-            keyboard['buttons'].append(buttons_row)
+        keyboard['buttons'].append([])
+        for button in buttons_row:
+            if len(keyboard['buttons'][-1]) == 4:
+                keyboard['buttons'].append([])
+
+            button['action']['payload'] = json.dumps(button['action']['payload'], ensure_ascii=False)
+            keyboard['buttons'][-1].append(button)
     return json.dumps(keyboard, ensure_ascii=False)
