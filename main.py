@@ -36,6 +36,14 @@ def foo(exctype, value, tb):
         traceback.print_exception(exctype, value, tb, file=error_file)
 
 
+def init_messages_get_thread():
+    logging.info('init new longpoll thread')
+    stdout = queue.Queue()
+    listner = threading.Thread(target=longpoll.listen, args=(stdout,))
+    listner.start()
+    return stdout, listner
+
+
 if __name__ == '__main__':
     init_logging()
     sys.excepthook = foo
@@ -49,16 +57,22 @@ if __name__ == '__main__':
     db_api.init_db()
     db_api.update_admins(admin_list)
 
-    longpoll_stdout = queue.Queue()
-    longpoll_listner = threading.Thread(target=longpoll.listen, args=(longpoll_stdout,))
-    longpoll_listner.start()
+    long_poll_stdout, long_poll_listner = init_messages_get_thread()
 
     changes_count = 0
 
     timer = Timer()
 
     while 1:
-        new_messages = longpoll_stdout.get(timeout=120)
+        try:
+            new_messages = long_poll_stdout.get(timeout=120)
+        except queue.Empty:
+            long_poll_stdout.task_done()
+            long_poll_stdout.join()
+            long_poll_listner.join(timeout=10)
+            long_poll_stdout, long_poll_listner = init_messages_get_thread()
+            continue
+
         timer.start('total')
         for msg in new_messages:
             print('usr msg:', msg)
