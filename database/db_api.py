@@ -324,11 +324,11 @@ def suit_by_parameters(profile_id, parameter_list, max_profiles=1000):
                                        parameter.item_id.in_(not_allowed)))
 
         s_union = similarity[0] + similarity[1] + similarity[2] + similarity[3]
-        similarity_count = s_union.select_from(peewee.fn.COUNT()).where(s_union.c.profile_id == RpProfile.id)
-        have_similarity = s_union.select_from(peewee.fn.COUNT() > 0).where(s_union.c.profile_id == RpProfile.id)
+        similarity_count = s_union.select(peewee.fn.COUNT()).where(s_union.c.profile_id == RpProfile.id)
+        have_similarity = s_union.select(peewee.fn.COUNT() > 0).where(s_union.c.profile_id == RpProfile.id)
 
         ns_union = unsimilarity[0] | unsimilarity[1] | unsimilarity[2] | unsimilarity[3]
-        not_have_similarity = ns_union.select_from(peewee.fn.COUNT() > 0).where(ns_union.c.profile_id == RpProfile.id)
+        not_have_similarity = ns_union.select(peewee.fn.COUNT() > 0).where(ns_union.c.profile_id == RpProfile.id)
 
         user_id = RpProfile.select(RpProfile.owner_id).where(RpProfile.id == profile_id)
 
