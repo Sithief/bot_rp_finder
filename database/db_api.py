@@ -304,64 +304,46 @@ def delete_notification(notification_id):
         return False
 
 
-def count_similarity_score(parameter_list, user_pr_id, player_pr_id):
-    score = 0
-    for parameter in parameter_list:
-        user_items_ids = parameter.select(parameter.item_id).where((parameter.profile_id == user_pr_id))
-        score += parameter.select()\
-            .where((parameter.profile_id == player_pr_id) &
-                   parameter.item_id.in_(user_items_ids) &
-                   parameter.is_allowed).count()
-    return score
-
-
-def get_unsuit_profiles(profile_id, parameter):
-    # получаем id полей, которые пользователь исключил из поиска
-    not_allowed_items = parameter.select(parameter.item_id) \
-        .where((parameter.profile_id == profile_id) & ~parameter.is_allowed).distinct()
-
-    # получаем id анкет, которые содержат недопустимые поля
-    unsuit_profiles = parameter.select(parameter.profile_id) \
-        .where(parameter.item_id.in_(not_allowed_items) & parameter.is_allowed).distinct()
-    return unsuit_profiles
-
-
-def get_suit_profiles(profile_id, parameter, unsuit_profiles):
-    # получаем id полей, которые пользователь выбрал для поиска
-    allowed_items = parameter.select(parameter.item_id) \
-        .where((parameter.profile == profile_id) & parameter.is_allowed)
-
-    # получаем id анкет, которые содержат необходимые поля
-    suit_profiles = parameter.select(parameter.profile_id) \
-        .where(parameter.item_id.in_(allowed_items) &
-               parameter.is_allowed &
-               parameter.profile_id.not_in(unsuit_profiles)).distinct()
-    return suit_profiles
-
-
-def suit_by_parameters(profile_id, parameter_list, max_profiles=40):
+def suit_by_parameters(profile_id, parameter_list, max_profiles=1000):
     try:
-        unsuit_profiles = get_unsuit_profiles(profile_id, parameter_list[0])
-        for parameter in parameter_list[1:]:
-            unsuit_profiles += get_unsuit_profiles(profile_id, parameter)
+        similarity = list()
+        unsimilarity = list()
 
-        suit_profiles = get_suit_profiles(profile_id, parameter_list[0], unsuit_profiles)
-        for parameter in parameter_list[1:]:
-            suit_profiles += get_suit_profiles(profile_id, parameter, unsuit_profiles)
+        for parameter in parameter_list:
+            allowed = parameter.select(parameter.item_id)\
+                .where((parameter.profile_id == profile_id) & parameter.is_allowed)
+            not_allowed = parameter.select(parameter.item_id)\
+                .where((parameter.profile_id == profile_id) & ~parameter.is_allowed)
+            similarity.append(parameter
+                              .select()
+                              .where(parameter.is_allowed &
+                                     parameter.item_id.in_(allowed)))
+            unsimilarity.append(parameter
+                                .select()
+                                .where(parameter.is_allowed &
+                                       parameter.item_id.in_(not_allowed)))
 
-        # получаем анкеты, которые содержат необходимые поля
-        user_id = RpProfile().get_profile(profile_id).owner_id
+        s_union = similarity[0] + similarity[1] + similarity[2] + similarity[3]
+        similarity_count = s_union.select_from(peewee.fn.COUNT()).where(s_union.c.profile_id == RpProfile.id)
+        have_similarity = s_union.select_from(peewee.fn.COUNT() > 0).where(s_union.c.profile_id == RpProfile.id)
 
-        profile_field = parameter_list[0].profile_field
-        profiles_list = profile_field\
+        ns_union = unsimilarity[0] | unsimilarity[1] | unsimilarity[2] | unsimilarity[3]
+        not_have_similarity = ns_union.select_from(peewee.fn.COUNT() > 0).where(ns_union.c.profile_id == RpProfile.id)
+
+        user_id = RpProfile.select(RpProfile.owner_id).where(RpProfile.id == profile_id)
+
+        profiles_list = RpProfile\
             .select()\
-            .where(profile_field.id.in_(suit_profiles)
-                   & ~profile_field.search_preset
-                   & (profile_field.owner_id != user_id))\
-            .order_by(profile_field.create_date.desc())\
+            .where(peewee.Tuple(True).in_(have_similarity) &
+                   peewee.Tuple(False).in_(not_have_similarity) &
+                   RpProfile.owner_id.not_in(user_id) &
+                   ~RpProfile.search_preset)\
+            .order_by(similarity_count)\
             .limit(max_profiles)
-        # print('profiles_list.sql()', profiles_list.sql())
-        return list(profiles_list)
+        # print('\n\nprofiles_list\n', profiles_list.dicts())
+        profiles_list = list(profiles_list)
+        profiles_list.reverse()
+        return profiles_list
     except tuple(parameter.DoesNotExist for parameter in parameter_list):
         return []
 
@@ -373,17 +355,9 @@ def find_suitable_profiles(profile_id):
         ProfileSpeciesList,
         ProfileRpRatingList
     )
-
     suit_profiles = suit_by_parameters(profile_id, parameters)
 
-    suit_profiles_score = [{'profile': i,
-                            'score': count_similarity_score(parameters, profile_id, i.id)}
-                           for i in suit_profiles]
-
-    suit_profiles_score.sort(key=lambda x: x['score'], reverse=True)
-    suit_profiles_sorted = [i['profile'] for i in suit_profiles_score]
-
-    return suit_profiles_sorted
+    return suit_profiles
 
 
 def init_db():
