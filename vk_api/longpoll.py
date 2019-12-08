@@ -2,6 +2,7 @@ import requests
 import time
 import json
 import logging
+import threading
 from bot_rp_finder.vk_api import vk_api
 from bot_rp_finder.vk_api.Keys import Keys
 
@@ -103,7 +104,7 @@ def listen(stdout):
     bot_api = LongPoll(Keys().get_group_token(), Keys().get_group_id(), 'long_poll')
     stdout.put(bot_api.unread())
     bot_api.new_long_poll_server()
-    while 1:
+    while threading.main_thread().is_alive():
         try:
             response = bot_api.long_poll()
             if response:

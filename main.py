@@ -67,9 +67,6 @@ if __name__ == '__main__':
         try:
             new_messages = long_poll_stdout.get(timeout=120)
         except queue.Empty:
-            long_poll_stdout.task_done()
-            long_poll_stdout.join()
-            long_poll_listner.join(timeout=10)
             long_poll_stdout, long_poll_listner = init_messages_get_thread()
             continue
 
