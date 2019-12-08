@@ -8,7 +8,7 @@ def send(stdin):
     bot_api = vk_api.Api(Keys().get_group_token(), 'msg_send')
     while threading.main_thread().is_alive():
         try:
-            peer_id, payload = stdin.get(timeout=120)
+            peer_id, payload = stdin.get()
         except Exception as error_msg:
             logging.error(f'msg send: {error_msg}')
             continue
