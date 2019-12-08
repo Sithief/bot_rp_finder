@@ -38,8 +38,11 @@ class Timer:
         timer['class'].add(time.time() - timer['act_timer'])
 
     def output(self):
-        print('{:^5}|{:^30}|{:^15}|{:^15}|{:^15}'.format('count', 'name', 'mean', 'median', 'last'))
+        text = '{:^5}|{:^30}|{:^15}|{:^15}|{:^15}\n'.format('count', 'name', 'mean', 'median', 'last')
+        timers = list()
         for t in self.f_timers:
             timer = self.f_timers[t]['class']
-            print('{:>5}|{:<30}|{:>15}|{:>15}|{:>15}'
-                  .format(timer.count(), timer.name, timer.mean(), timer.median(), timer.last()))
+            timers.append((timer.count(), timer.name, timer.mean(), timer.median(), timer.last()))
+        timers.sort(key=lambda x: x[0], reverse=True)
+        timers = ['{:>5}|{:<30}|{:>15}|{:>15}|{:>15}'.format(*i) for i in timers]
+        print(text + '\n'.join(timers))
