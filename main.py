@@ -3,13 +3,21 @@ import queue
 import logging
 import traceback
 import sys
-sys.path.append('../')
-from bot_rp_finder.menu import menu
-from bot_rp_finder.menu.execute_time import Timer
-from bot_rp_finder.vk_api import vk_api, longpoll
-from bot_rp_finder.vk_api.Keys import Keys
-from bot_rp_finder.database import db_api
-from bot_rp_finder.dropbox_api import dropbox_backup
+try:
+    from bot_rp_finder.menu import menu
+    from bot_rp_finder.menu.execute_time import Timer
+    from bot_rp_finder.vk_api import vk_api, longpoll, msg_send
+    from bot_rp_finder.vk_api.Keys import Keys
+    from bot_rp_finder.database import db_api
+    from bot_rp_finder.dropbox_api import dropbox_backup
+except:
+    sys.path.append('../')
+    from bot_rp_finder.menu import menu
+    from bot_rp_finder.menu.execute_time import Timer
+    from bot_rp_finder.vk_api import vk_api, longpoll, msg_send
+    from bot_rp_finder.vk_api.Keys import Keys
+    from bot_rp_finder.database import db_api
+    from bot_rp_finder.dropbox_api import dropbox_backup
 
 
 def init_logging():
@@ -38,10 +46,21 @@ def foo(exctype, value, tb):
 
 def init_messages_get_thread():
     logging.info('init new longpoll thread')
-    stdout = queue.Queue()
-    listner = threading.Thread(target=longpoll.listen, args=(stdout,))
+    stdin = queue.Queue()
+    listner = threading.Thread(target=longpoll.listen, args=(stdin,))
     listner.start()
-    return stdout, listner
+    return stdin, listner
+
+
+def init_messages_send_threads(count):
+    logging.info('init new longpoll thread')
+    stdout = queue.Queue()
+    senders = list()
+    for i in range(count):
+        sender = threading.Thread(target=msg_send.send, args=(stdout,))
+        sender.start()
+        senders.append(sender)
+    return stdout, senders
 
 
 if __name__ == '__main__':
@@ -58,6 +77,7 @@ if __name__ == '__main__':
     db_api.update_admins(admin_list)
 
     long_poll_stdout, long_poll_listner = init_messages_get_thread()
+    msg_send_stdin, msg_senders = init_messages_send_threads(5)
 
     changes_count = 0
 
@@ -87,9 +107,7 @@ if __name__ == '__main__':
 
             actions = vk_api.get_actions_from_buttons(bot_message['keyboard'])
             db_api.AvailableActions().update_actions(msg['from_id'], actions)
-            timer.start('msg_send')
-            bot_api.msg_send(peer_id=msg['from_id'], payload=bot_message)
-            timer.time_stamp('msg_send')
+            msg_send_stdin.put((msg['peer_id'], bot_message))
 
         if new_messages:
             timer.time_stamp('total')
