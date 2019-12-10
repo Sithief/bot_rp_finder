@@ -264,11 +264,17 @@ def show_player_profile(user_message):
             if user_message['payload']['args']['offer']:
                 if not role_offer:
                     new_offer = db_api.RoleOffer().create_offer(user_info.id, user_info.tmp_item_id)
-                    notification = db_api.create_notification(new_offer.to_owner_id, 'Предложение ролевой')
-                    notification.description = f'Пользователь [id{user_info.id}|{user_info.name}] ' \
-                                               f'{t_ext.gender_msg("предожил", "предожила", user_info.is_fem)}' \
-                                               f' вам ролевую, вы можете просмотреть ' \
-                                               f'{t_ext.gender_msg("его", "её", user_info.is_fem)} анкеты.'
+                    if db_api.RoleOffer().get_offer_from_profile(user_info.tmp_item_id, user_info.id):
+                        notification = db_api.create_notification(new_offer.to_owner_id, 'Ответ на предложение ролевой')
+                        notification.description = f'Пользователь [id{user_info.id}|{user_info.name}] тоже' \
+                                                   f' хочет с вами сыграть. Вы можете просмотреть ' \
+                                                   f'{t_ext.gender_msg("его", "её", user_info.is_fem)} анкеты.'
+                    else:
+                        notification = db_api.create_notification(new_offer.to_owner_id, 'Предложение ролевой')
+                        notification.description = f'Пользователь [id{user_info.id}|{user_info.name}] ' \
+                                                   f'{t_ext.gender_msg("предожил", "предожила", user_info.is_fem)}' \
+                                                   f' вам ролевую, вы можете просмотреть ' \
+                                                   f'{t_ext.gender_msg("его", "её", user_info.is_fem)} анкеты.'
                     notification.create_time = int(time.time())
                     buttons = list()
                     profiles = db_api.RpProfile().get_user_profiles(user_message['from_id'])
@@ -288,7 +294,7 @@ def show_player_profile(user_message):
                 role_offer.actual = False
                 role_offer.save()
     except Exception as e:
-        print('show_player_profile', e)
+        logging.error(f'show_player_profile: {e}')
         pass
 
     message = system.rp_profile_display(user_info.tmp_item_id)
