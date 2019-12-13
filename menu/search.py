@@ -99,7 +99,7 @@ def change_preset(user_message):
             'attachment': message['attachment'],
             'keyboard': [[buttons_change_name],
                          [buttons_change_gender, buttons_change_species],
-                         [buttons_change_setting, buttons_change_optional_tag, buttons_change_rp_rating]
+                         [buttons_change_setting, buttons_change_optional_tag, buttons_change_rp_rating],
                          [button_search],
                          [buttons_delete],
                          [button_main]]}
