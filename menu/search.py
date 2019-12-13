@@ -24,6 +24,7 @@ def get_menus():
     menus.update(ChangeRpRatingList().get_menu_ids())
     menus.update(ChangeGenderList().get_menu_ids())
     menus.update(ChangeSpeciesList().get_menu_ids())
+    menus.update(ChangeOptionalTagList().get_menu_ids())
     return menus
 
 # поиск со-игроков
@@ -86,6 +87,7 @@ def change_preset(user_message):
     buttons_change_gender = vk_api.new_button('Пол', {'m_id': ChangeGenderList().menu_names['change']})
     buttons_change_setting = vk_api.new_button('Сеттинг', {'m_id': ChangeSettingList().menu_names['change']})
     buttons_change_rp_rating = vk_api.new_button('Рейтинг', {'m_id': ChangeRpRatingList().menu_names['change']})
+    buttons_change_optional_tag = vk_api.new_button('Теги', {'m_id': ChangeOptionalTagList().menu_names['change']})
     buttons_change_species = vk_api.new_button('Вид', {'m_id': ChangeSpeciesList().menu_names['change']})
     buttons_delete = vk_api.new_button('Удалить пресет',
                                        {'m_id': 'confirm_action',
@@ -96,8 +98,8 @@ def change_preset(user_message):
     return {'message': message['message'],
             'attachment': message['attachment'],
             'keyboard': [[buttons_change_name],
-                         [buttons_change_gender, buttons_change_setting,
-                          buttons_change_rp_rating, buttons_change_species],
+                         [buttons_change_gender, buttons_change_species],
+                         [buttons_change_setting, buttons_change_optional_tag, buttons_change_rp_rating]
                          [button_search],
                          [buttons_delete],
                          [button_main]]}
@@ -126,6 +128,11 @@ class ChangeSpeciesList(PresetList):
 class ChangeGenderList(PresetList):
     table_class = db_api.ProfileGenderList()
     menu_prefix = 'preset_gender_'
+
+
+class ChangeOptionalTagList(PresetList):
+    table_class = db_api.ProfileOptionalTagList()
+    menu_prefix = 'preset_optional_tag_'
 
 
 class ChangeName(user_profile.InputText):

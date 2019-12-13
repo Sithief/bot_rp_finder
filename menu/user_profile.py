@@ -21,6 +21,7 @@ def get_menus():
     menus.update(ChangeRpRatingList().get_menu_ids())
     menus.update(ChangeGenderList().get_menu_ids())
     menus.update(ChangeSpeciesList().get_menu_ids())
+    menus.update(ChangeOptionalTagList().get_menu_ids())
     return menus
 
 
@@ -86,6 +87,7 @@ def change_profile(user_message):
     buttons_change_setting = vk_api.new_button('Сеттинг', {'m_id': ChangeSettingList().menu_names['change']})
     buttons_change_rp_rating = vk_api.new_button('Рейтинг', {'m_id': ChangeRpRatingList().menu_names['change']})
     buttons_change_species = vk_api.new_button('Вид', {'m_id': ChangeSpeciesList().menu_names['change']})
+    buttons_change_optional_tag = vk_api.new_button('Теги', {'m_id': ChangeOptionalTagList().menu_names['change']})
     buttons_change_description = vk_api.new_button('Описание', {'m_id': ChangeDescription().menu_names['change']})
     buttons_change_images = vk_api.new_button('Изображения', {'m_id': 'change_images', 'args': None})
     buttons_delete = vk_api.new_button('Удалить анкету',
@@ -96,8 +98,8 @@ def change_profile(user_message):
     return {'message': message['message'],
             'attachment': message['attachment'],
             'keyboard': [[buttons_change_name, buttons_change_description],
-                         [buttons_change_gender, buttons_change_setting,
-                          buttons_change_rp_rating, buttons_change_species],
+                         [buttons_change_gender, buttons_change_species],
+                         [buttons_change_setting, buttons_change_optional_tag, buttons_change_rp_rating],
                          [buttons_change_images],
                          [buttons_delete],
                          [button_main]]}
@@ -233,10 +235,13 @@ class CheckButton:
         user_item = self.table_class.get_list(profile_id)
         user_items_dict = {i.item.id: i for i in user_item}
 
-        message = 'Выберите подходящие параметры для персонажа:\n' \
-                  '• Первое нажатие добавляет в список\n' \
-                  '• Второе переносит в список исключений\n' \
-                  '• третье - убирает из списков'
+        if self.unique_option:
+            message = 'Выберите подходящий параметр для персонажа'
+        else:
+            message = 'Выберите подходящие параметры для персонажа:\n' \
+                      '• Первое нажатие добавляет в список\n' \
+                      '• Второе переносит в список исключений\n' \
+                      '• третье - убирает из списков'
 
         if user_message['payload']['args']:
             if self.unique_option:
@@ -277,6 +282,11 @@ class ChangeGenderList(ProfileList):
     unique_option = True
     table_class = db_api.ProfileGenderList()
     menu_prefix = 'profile_gender_'
+
+
+class ChangeOptionalTagList(ProfileList):
+    table_class = db_api.ProfileOptionalTagList()
+    menu_prefix = 'profile_optional_tag_'
 
 
 class ChangeProfileText(InputText):

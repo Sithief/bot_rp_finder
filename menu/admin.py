@@ -10,6 +10,7 @@ def get_menus():
     menus.update(RpRatingConfiguration().get_menu_ids())
     menus.update(GenderConfiguration().get_menu_ids())
     menus.update(SpeciesConfiguration().get_menu_ids())
+    menus.update(OptionalTagConfiguration().get_menu_ids())
     return menus
 
 # Меню администратора
@@ -25,11 +26,12 @@ def admin_menu(user_message):
                                             {'m_id': GenderConfiguration().menu_names['item_list']})
     button_admin_species = vk_api.new_button('Настройки списка видов существ',
                                              {'m_id': SpeciesConfiguration().menu_names['item_list']})
+    button_admin_optional_tag = vk_api.new_button('Настройки списка тегов',
+                                             {'m_id': OptionalTagConfiguration().menu_names['item_list']})
     button_main = vk_api.new_button('Главное меню', {'m_id': 'main'}, 'primary')
-    return {'message': message, 'keyboard': [[button_admin_setting],
-                                             [button_admin_rp_rating],
-                                             [button_admin_gender],
-                                             [button_admin_species],
+    return {'message': message, 'keyboard': [[button_admin_setting, button_admin_rp_rating],
+                                             [button_admin_gender, button_admin_species],
+                                             [button_admin_optional_tag],
                                              [button_main]]}
 
 
@@ -201,3 +203,8 @@ class GenderConfiguration(AdditionalField):
 class SpeciesConfiguration(AdditionalField):
     table_class = db_api.Species()
     menu_prefix = 'admin_species_'
+
+
+class OptionalTagConfiguration(AdditionalField):
+    table_class = db_api.OptionalTag()
+    menu_prefix = 'admin_optional_tag_'

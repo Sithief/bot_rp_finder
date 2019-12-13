@@ -82,7 +82,7 @@ def rp_profile_display(profile_id):
         return access_error()
     profile = dict({'message': '', 'attachment': ''})
     if rp_profile.search_preset:
-        profile['message'] += f'Назваие пресета: {rp_profile.name}\n'
+        profile['message'] += f'Название пресета: {rp_profile.name}\n'
     else:
         profile['message'] += f'Имя: {rp_profile.name}\n'
 

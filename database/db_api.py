@@ -245,6 +245,15 @@ class ProfileSpeciesList(ProfileAdditionalField):
     item = peewee.ForeignKeyField(additional_field, on_delete='cascade')
 
 
+class OptionalTag(AdditionalField):
+    pass
+
+
+class ProfileOptionalTagList(ProfileAdditionalField):
+    additional_field = OptionalTag
+    item = peewee.ForeignKeyField(additional_field, on_delete='cascade')
+
+
 class Notification(peewee.Model):
     owner_id = peewee.IntegerField(default=0)
     title = peewee.CharField()
@@ -291,7 +300,10 @@ def create_notification(owner_id, title):
 
 def get_user_notifications(owner_id):
     try:
-        notifications = Notification.select().where(Notification.owner_id == owner_id)
+        notifications = Notification.select()\
+            .where(Notification.owner_id == owner_id)\
+            .order_by(Notification.create_time.desc())\
+            .limit(8)
         return notifications
     except Notification.DoesNotExist:
         return []
@@ -333,11 +345,15 @@ def suit_by_parameters(profile_id, parameter_list, max_profiles=1000):
                                 .where(parameter.is_allowed &
                                        parameter.item_id.in_(not_allowed)))
 
-        s_union = similarity[0] + similarity[1] + similarity[2] + similarity[3]
+        s_union = similarity[0]
+        for sim in similarity[1:]:
+            s_union += sim
         similarity_count = s_union.select(peewee.fn.COUNT()).where(s_union.c.profile_id == RpProfile.id)
         have_similarity = s_union.select(peewee.fn.COUNT() > 0).where(s_union.c.profile_id == RpProfile.id)
 
-        ns_union = unsimilarity[0] | unsimilarity[1] | unsimilarity[2] | unsimilarity[3]
+        ns_union = unsimilarity[0]
+        for nsim in unsimilarity[1:]:
+            ns_union |= nsim
         not_have_similarity = ns_union.select(peewee.fn.COUNT() > 0).where(ns_union.c.profile_id == RpProfile.id)
 
         user_id = RpProfile.select(RpProfile.owner_id).where(RpProfile.id == profile_id)
@@ -354,7 +370,7 @@ def suit_by_parameters(profile_id, parameter_list, max_profiles=1000):
         profiles_list = list(profiles_list)
         profiles_list.reverse()
         return profiles_list
-    except tuple(parameter.DoesNotExist for parameter in parameter_list):
+    except RpProfile.DoesNotExist:
         return []
 
 
@@ -363,7 +379,8 @@ def find_suitable_profiles(profile_id):
         ProfileGenderList,
         ProfileSettingList,
         ProfileSpeciesList,
-        ProfileRpRatingList
+        ProfileRpRatingList,
+        ProfileOptionalTagList
     )
     suit_profiles = suit_by_parameters(profile_id, parameters)
 
@@ -384,6 +401,8 @@ def init_db():
     Species.create_table()
     ProfileSpeciesList.create_table()
     AvailableActions.create_table()
+    OptionalTag.create_table()
+    ProfileOptionalTagList.create_table()
 
 
 def update_admins(admin_list):
@@ -409,12 +428,13 @@ if __name__ == "__main__":
     # t_id = int(input('delete id'))
     # print(TestField().delete_field(t_id))
 
-    import playhouse.migrate as playhouse_migrate
-    migrator = playhouse_migrate.SqliteMigrator(db)
-
-    playhouse_migrate.migrate(
-        # migrator.add_column('RpProfile', 'search_preset', RpProfile.search_preset),
-        # migrator.rename_column('ProfileSettingList', 'item_id', 'item'),
-        # migrator.drop_column('RoleOffer', 'to_profile_id')
-    )
+    # import playhouse.migrate as playhouse_migrate
+    # migrator = playhouse_migrate.SqliteMigrator(db)
+    #
+    # playhouse_migrate.migrate(
+    #     # migrator.add_column('RpProfile', 'search_preset', RpProfile.search_preset),
+    #     # migrator.rename_column('ProfileSettingList', 'item_id', 'item'),
+    #     # migrator.drop_column('RoleOffer', 'to_profile_id')
+    # )
+    # find_suitable_profiles(10)
     pass
