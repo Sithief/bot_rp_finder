@@ -110,6 +110,12 @@ def rp_profile_display(profile_id):
     if unwant_setting_list:
         profile['message'] += f'Нежелательный сеттинг: {", ".join(unwant_setting_list)}\n'
 
+    want_tag_list, unwant_tag_list = get_profile_parameter(db_api.ProfileOptionalTagList(), profile_id)
+    if want_tag_list:
+        profile['message'] += f'Желательные теги: {", ".join(want_tag_list)}\n'
+    if unwant_tag_list:
+        profile['message'] += f'Нежелательные теги: {", ".join(unwant_tag_list)}\n'
+
     if not rp_profile.search_preset:
         profile['message'] += f'Описание: {rp_profile.description}\n'
         profile['attachment'] = ','.join(json.loads(rp_profile.arts))
