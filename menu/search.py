@@ -69,6 +69,21 @@ def create_preset(user_message):
     return change_preset(user_message)
 
 
+def delete_preset(user_message):
+    user_info = db_api.User().get_user(user_message['from_id'])
+    try:
+        profile = db_api.RpProfile().get_profile(user_info.item_id).name
+        if db_api.RpProfile().delete_profile(user_info.item_id):
+            message = f'Ваш поисковой пресет "{profile}" успешно удален.'
+        else:
+            message = f'Во время удаления пресета произошла ошибка, попробуйте повторить запрос через некоторое время.'
+    except:
+        message = f'Во время удаления пресета произошла ошибка, попробуйте повторить запрос через некоторое время.'
+    button_return = vk_api.new_button('Вернуться к списку пресетов',
+                                      {'m_id': 'choose_preset_to_search', 'args': None})
+    return {'message': message, 'keyboard': [[button_return]]}
+
+
 def change_preset(user_message):
     user_info = db_api.User().get_user(user_message['from_id'])
 
@@ -91,7 +106,7 @@ def change_preset(user_message):
     buttons_change_species = vk_api.new_button('Вид', {'m_id': ChangeSpeciesList().menu_names['change']})
     buttons_delete = vk_api.new_button('Удалить пресет',
                                        {'m_id': 'confirm_action',
-                                        'args': {'m_id': 'delete_profile',
+                                        'args': {'m_id': 'delete_preset',
                                                  'args': {'profile_id': user_info.item_id}}},
                                        'negative')
     button_search = vk_api.new_button('Искать по пресету', {'m_id': 'search_by_preset'}, 'positive')
