@@ -38,9 +38,11 @@ def init_logging():
 
 def foo(exctype, value, tb):
     import logging
+    import time
     init_logging()
     logging.critical(f'EXCEPTION: Type: {exctype}, Value: {value}')
     with open('log/bot_errors.log', 'w') as error_file:
+        error_file.write(time.asctime() + '\n')
         traceback.print_exception(exctype, value, tb, file=error_file)
 
 

@@ -76,6 +76,8 @@ def change_profile(user_message):
     except Exception as error_msg:
         logging.error(str(error_msg))
     message = system.rp_profile_display(user_info.item_id)
+    if 'attachment' not in message:
+        return message
 
     user_info.menu_id = 'change_profile'
     user_info.save()
