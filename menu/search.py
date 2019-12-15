@@ -192,12 +192,8 @@ def search_by_preset(user_message):
                                                       'btn_back': {'label': 'К списку анкет',
                                                                    'm_id': 'search_by_preset'}
                                                       }}, color))
-    if len(pr_buttons) % 3:
-        steps = len(pr_buttons) // 3 * 3
-        pr_buttons = [pr_buttons[i:i + 3] for i in range(0, steps, 3)] + [pr_buttons[steps:]]
-    else:
-        steps = len(pr_buttons) // 3 * 3
-        pr_buttons = [pr_buttons[i:i + 3] for i in range(0, steps, 3)]
+    steps = len(pr_buttons) // 3 * 3
+    pr_buttons = [pr_buttons[i:i + 3] for i in range(0, steps, 3)] + [pr_buttons[steps:]]
 
     prew_color, next_color, prew_iter, next_iter = 'default', 'default', user_info.list_iter, user_info.list_iter
     if user_info.list_iter > 0:

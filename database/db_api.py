@@ -298,12 +298,12 @@ def create_notification(owner_id, title):
     return new_notification
 
 
-def get_user_notifications(owner_id):
+def get_user_notifications(owner_id, count=8):
     try:
         notifications = Notification.select()\
             .where(Notification.owner_id == owner_id)\
             .order_by(Notification.create_time.desc())\
-            .limit(8)
+            .limit(count)
         return notifications
     except Notification.DoesNotExist:
         return []

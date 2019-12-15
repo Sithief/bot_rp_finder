@@ -16,17 +16,19 @@ def get_menus():
 
 
 def notifications(user_message):
-    notifications_list = db_api.get_user_notifications(user_message['from_id'])
+    notifications_list = db_api.get_user_notifications(user_message['from_id'], 15)
     message = 'Список уведомлений'
     nt_buttons = list()
     for num, nt in enumerate(notifications_list):
         color = 'positive'
         if nt.is_read:
             color = 'default'
-        nt_buttons.append([vk_api.new_button(nt.title,
-                                             {'m_id': 'notification_display',
-                                              'args': {'nt_id': nt.id}}, color)])
+        nt_buttons.append(vk_api.new_button(nt.title,
+                                            {'m_id': 'notification_display',
+                                             'args': {'nt_id': nt.id}}, color))
 
+    steps = len(nt_buttons) // 3 * 3
+    nt_buttons = [nt_buttons[i:i + 3] for i in range(0, steps, 3)] + [nt_buttons[steps:]]
     button_main = vk_api.new_button('Главное меню', {'m_id': 'main', 'args': None}, 'primary')
     return {'message': message, 'keyboard': nt_buttons + [[button_main]]}
 
