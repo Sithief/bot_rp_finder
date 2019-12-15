@@ -357,10 +357,10 @@ def keyboard_from_buttons(buttons):
         if len(buttons_row) > 4:
             if len(buttons_row) % 4:
                 steps = len(buttons_row) // 4 * 4
-                keyboard['buttons'] += [buttons_row[i:i + 3] for i in range(0, steps, 3)] + [buttons_row[steps:]]
+                keyboard['buttons'] += [buttons_row[i:i + 4] for i in range(0, steps, 4)] + [buttons_row[steps:]]
             else:
                 steps = len(buttons_row) // 4 * 4
-                keyboard['buttons'] += [buttons_row[i:i + 3] for i in range(0, steps, 3)]
+                keyboard['buttons'] += [buttons_row[i:i + 4] for i in range(0, steps, 4)]
         elif len(buttons_row) > 0:
             keyboard['buttons'].append(buttons_row)
 
