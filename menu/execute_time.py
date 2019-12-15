@@ -15,11 +15,13 @@ class FunctionTime:
     def count(self):
         return len(self.times)
 
-    def mean(self, round_to=5):
-        return round(sum(self.times) / len(self.times), round_to)
+    def mean(self, count=1000, round_to=5):
+        times = self.times[len(self.times) - count:]
+        return round(sum(times) / len(times), round_to)
 
-    def median(self, round_to=5):
-        return round(sorted(self.times)[len(self.times) // 2], round_to)
+    def median(self, count=1000, round_to=5):
+        times = self.times[len(self.times) - count:]
+        return round(sorted(times)[len(times) // 2], round_to)
 
     def last(self, round_to=5):
         return round(self.times[-1], round_to)
@@ -46,3 +48,10 @@ class Timer:
         timers.sort(key=lambda x: x[0], reverse=True)
         timers = ['{:>5}|{:<30}|{:>15}|{:>15}|{:>15}'.format(*i) for i in timers]
         print(text + '\n'.join(timers))
+
+    def quick_stat(self, func='total'):
+        timer = self.f_timers[func]['class']
+        text = 'msg count: {:>4}| last 100: {:>4}| last 25: {:>4}| last: {:>4}|'\
+            .format(timer.count(), timer.mean(count=100, round_to=3),
+                    timer.mean(count=25, round_to=3), timer.last(round_to=3))
+        return text

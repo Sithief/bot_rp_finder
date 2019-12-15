@@ -114,10 +114,10 @@ if __name__ == '__main__':
         if new_messages:
             timer.time_stamp('total')
             changes_count += 1
-            if changes_count > 10:
-                timer.output()
+            logging.info(timer.quick_stat('total'))
 
         elif changes_count > 10:
+            timer.output()
             changes_count = 0
             timer.start('dropbox')
             dropbox_backup.backup_db()
