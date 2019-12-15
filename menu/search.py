@@ -165,7 +165,7 @@ class ChangeName(user_profile.InputText):
 
 
 def search_by_preset(user_message):
-    profiles_per_page = 4
+    profiles_per_page = 15
     user_info = db_api.User().get_user(user_message['from_id'])
     if user_message['payload']['args'] and 'iter' in user_message['payload']['args']:
         user_info.list_iter = user_message['payload']['args']['iter']
@@ -185,12 +185,18 @@ def search_by_preset(user_message):
             color = 'primary'
             if pr.owner_id in confirmed_offers:
                 color = 'positive'
-        pr_buttons.append([vk_api.new_button(pr.name,
-                                             {'m_id': 'show_player_profile',
-                                              'args': {'profile_id': pr.id,
-                                                       'btn_back': {'label': 'К списку анкет',
-                                                                    'm_id': 'search_by_preset'}
-                                                       }}, color)])
+        pr_buttons.append(vk_api.new_button(pr.name,
+                                            {'m_id': 'show_player_profile',
+                                             'args': {'profile_id': pr.id,
+                                                      'btn_back': {'label': 'К списку анкет',
+                                                                   'm_id': 'search_by_preset'}
+                                                      }}, color))
+    if len(pr_buttons) % 3:
+        steps = len(pr_buttons) // 3 * 3
+        pr_buttons = [pr_buttons[i:i + 3] for i in range(0, steps, 3)] + [pr_buttons[steps:]]
+    else:
+        steps = len(pr_buttons) // 3 * 3
+        pr_buttons = [pr_buttons[i:i + 3] for i in range(0, steps, 3)]
 
     prew_color, next_color, prew_iter, next_iter = 'default', 'default', user_info.list_iter, user_info.list_iter
     if user_info.list_iter > 0:
@@ -204,7 +210,7 @@ def search_by_preset(user_message):
     button_next = vk_api.new_button('Следующая страница', {'m_id': 'search_by_preset',
                                                            'args': {'iter': next_iter}}, next_color)
     button_main = vk_api.new_button('Назад', {'m_id': 'choose_preset_to_search'}, 'primary')
-    return {'message': message, 'keyboard': pr_buttons + [[button_prew, button_next], [button_main]]}
+    return {'message': message, 'keyboard': pr_buttons + [[button_prew, button_main, button_next]]}
 
 
 # def choose_profile_to_search(user_message):

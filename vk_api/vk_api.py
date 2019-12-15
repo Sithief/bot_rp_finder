@@ -171,8 +171,10 @@ class UserApi(object):
         except Exception as e:
             print("Can't write log to file!", str(e))
 
-    def request_get(self, method, parameters={}):
+    def request_get(self, method, parameters=None):
         # print('request_get                     ', end='\r')
+        if not parameters:
+            parameters = {}
         if 'access_token' not in parameters and 'v' not in parameters:
             parameters.update({'access_token': self.token, 'v': self.version})
         elif 'access_token' not in parameters:
@@ -352,12 +354,17 @@ def get_actions_from_buttons(buttons):
 def keyboard_from_buttons(buttons):
     keyboard = {'one_time': True, 'buttons': []}
     for buttons_row in buttons:
-        if buttons_row:
+        if len(buttons_row) in range(1, 5):
+            keyboard['buttons'].append(buttons_row)
+        else:
             keyboard['buttons'].append([])
             for button in buttons_row:
                 if len(keyboard['buttons'][-1]) == 4:
                     keyboard['buttons'].append([])
-
-                button['action']['payload'] = json.dumps(button['action']['payload'], ensure_ascii=False)
                 keyboard['buttons'][-1].append(button)
+
+    for key_row in keyboard['buttons']:
+        for key in key_row:
+            json_payload = json.dumps(key['action']['payload'], ensure_ascii=False)
+            key['action']['payload'] = json_payload
     return json.dumps(keyboard, ensure_ascii=False)
