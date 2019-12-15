@@ -348,7 +348,7 @@ def suit_by_parameters(profile_id, parameter_list, count, offset):
         s_union = similarity[0]
         for sim in similarity[1:]:
             s_union += sim
-        similarity_count = s_union.select(peewee.fn.COUNT()).where(s_union.c.profile_id == RpProfile.id)
+        similarity_count = s_union.select(0 - peewee.fn.COUNT()).where(s_union.c.profile_id == RpProfile.id)
         have_similarity = s_union.select(peewee.fn.COUNT() > 0).where(s_union.c.profile_id == RpProfile.id)
 
         ns_union = unsimilarity[0]
