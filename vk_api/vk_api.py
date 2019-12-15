@@ -354,17 +354,17 @@ def get_actions_from_buttons(buttons):
 def keyboard_from_buttons(buttons):
     keyboard = {'one_time': True, 'buttons': []}
     for buttons_row in buttons:
-        if len(buttons_row) in range(1, 5):
-            keyboard['buttons'].append(buttons_row)
-        else:
+        if len(buttons_row) > 4:
             keyboard['buttons'].append([])
             for button in buttons_row:
                 if len(keyboard['buttons'][-1]) == 4:
                     keyboard['buttons'].append([])
                 keyboard['buttons'][-1].append(button)
+        if len(buttons_row) > 0:
+            keyboard['buttons'].append(buttons_row)
 
     for key_row in keyboard['buttons']:
         for key in key_row:
-            json_payload = json.dumps(key['action']['payload'], ensure_ascii=False)
-            key['action']['payload'] = json_payload
+            if type(key['action']['payload']) != str:
+                key['action']['payload'] = json.dumps(key['action']['payload'], ensure_ascii=False)
     return json.dumps(keyboard, ensure_ascii=False)
