@@ -355,12 +355,13 @@ def keyboard_from_buttons(buttons):
     keyboard = {'one_time': True, 'buttons': []}
     for buttons_row in buttons:
         if len(buttons_row) > 4:
-            keyboard['buttons'].append([])
-            for button in buttons_row:
-                if len(keyboard['buttons'][-1]) == 4:
-                    keyboard['buttons'].append([])
-                keyboard['buttons'][-1].append(button)
-        if len(buttons_row) > 0:
+            if len(buttons_row) % 4:
+                steps = len(buttons_row) // 4 * 4
+                keyboard['buttons'] += [buttons_row[i:i + 3] for i in range(0, steps, 3)] + [buttons_row[steps:]]
+            else:
+                steps = len(buttons_row) // 4 * 4
+                keyboard['buttons'] += [buttons_row[i:i + 3] for i in range(0, steps, 3)]
+        elif len(buttons_row) > 0:
             keyboard['buttons'].append(buttons_row)
 
     for key_row in keyboard['buttons']:

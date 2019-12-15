@@ -113,8 +113,9 @@ if __name__ == '__main__':
 
         if new_messages:
             timer.time_stamp('total')
-            timer.output()
             changes_count += 1
+            if changes_count > 10:
+                timer.output()
 
         elif changes_count > 10:
             changes_count = 0
