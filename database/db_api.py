@@ -326,7 +326,7 @@ def delete_notification(notification_id):
         return False
 
 
-def suit_by_parameters(profile_id, parameter_list, max_profiles=1000):
+def suit_by_parameters(profile_id, parameter_list, count, offset):
     try:
         similarity = list()
         unsimilarity = list()
@@ -365,7 +365,7 @@ def suit_by_parameters(profile_id, parameter_list, max_profiles=1000):
                    RpProfile.owner_id.not_in(user_id) &
                    ~RpProfile.search_preset)\
             .order_by(similarity_count)\
-            .limit(max_profiles)
+            .limit(count).offset(offset)
         # print('\n\nprofiles_list\n', profiles_list.dicts())
         profiles_list = list(profiles_list)
         profiles_list.reverse()
@@ -374,7 +374,7 @@ def suit_by_parameters(profile_id, parameter_list, max_profiles=1000):
         return []
 
 
-def find_suitable_profiles(profile_id):
+def find_suitable_profiles(profile_id, count, offset):
     parameters = (
         ProfileGenderList,
         ProfileSettingList,
@@ -382,8 +382,7 @@ def find_suitable_profiles(profile_id):
         ProfileRpRatingList,
         ProfileOptionalTagList
     )
-    suit_profiles = suit_by_parameters(profile_id, parameters)
-
+    suit_profiles = suit_by_parameters(profile_id, parameters, count, offset)
     return suit_profiles
 
 

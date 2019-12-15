@@ -171,7 +171,8 @@ def search_by_preset(user_message):
         user_info.list_iter = user_message['payload']['args']['iter']
         user_info.save()
 
-    suitable_profiles = db_api.find_suitable_profiles(user_info.item_id)
+    offset = user_info.list_iter * profiles_per_page
+    suitable_profiles = db_api.find_suitable_profiles(user_info.item_id, count=profiles_per_page+1, offset=offset)
 
     sent_offers = [pr.to_owner_id for pr in db_api.RoleOffer().get_offers_from_user(user_info.id) if pr.actual]
     confirmed_offers = [pr.from_owner_id for pr in db_api.RoleOffer().get_offers_to_user(user_info.id) if pr.actual]
@@ -179,7 +180,7 @@ def search_by_preset(user_message):
               'Синим отправленные предложения.\n' \
               'Зелёным - взаимные предложения.'
     pr_buttons = list()
-    for pr in suitable_profiles[user_info.list_iter * profiles_per_page:(user_info.list_iter + 1) * profiles_per_page]:
+    for pr in suitable_profiles[:profiles_per_page]:
         color = 'default'
         if pr.owner_id in sent_offers:
             color = 'primary'
@@ -202,7 +203,7 @@ def search_by_preset(user_message):
     if user_info.list_iter > 0:
         prew_color = 'primary'
         prew_iter = user_info.list_iter - 1
-    if (user_info.list_iter + 1) * profiles_per_page < len(suitable_profiles):
+    if len(suitable_profiles) > profiles_per_page:
         next_color = 'primary'
         next_iter = user_info.list_iter + 1
     button_prew = vk_api.new_button('Предыдущая страница', {'m_id': 'search_by_preset',
