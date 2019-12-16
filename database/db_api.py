@@ -125,18 +125,24 @@ class RoleOffer(peewee.Model):
     def get_offer_to_profile(self, from_user_id, profile_id):
         try:
             to_user_id = RpProfile().get_profile(profile_id).owner_id
-            user_offers = self.get((self._schema.model.from_owner_id == from_user_id) &
-                                   (self._schema.model.to_owner_id == to_user_id))
-            return user_offers
+            if to_user_id:
+                user_offers = self.get((self._schema.model.from_owner_id == from_user_id) &
+                                       (self._schema.model.to_owner_id == to_user_id))
+                return user_offers
+            else:
+                return []
         except self.DoesNotExist:
             return []
 
     def get_offer_from_profile(self, from_profile_id, to_user_id):
         try:
             from_user_id = RpProfile().get_profile(from_profile_id).owner_id
-            user_offers = self.get((self._schema.model.from_owner_id == from_user_id) &
-                                   (self._schema.model.to_owner_id == to_user_id))
-            return user_offers
+            if from_user_id:
+                user_offers = self.get((self._schema.model.from_owner_id == from_user_id) &
+                                       (self._schema.model.to_owner_id == to_user_id))
+                return user_offers
+            else:
+                return []
         except self.DoesNotExist:
             return []
 
