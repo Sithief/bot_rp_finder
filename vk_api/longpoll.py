@@ -83,7 +83,7 @@ class LongPoll(vk_api.Api):
     def unread(self):
         logging.info(f'unread messages check')
         message_text = 'Модуль приёма сообщений был перезагружен. Будет учтена только последняя команда.'
-        unread_msg = self.request_get('messages.getConversations', {'filter': 'unanswered'})
+        unread_msg = self.request_get('messages.getConversations', {'filter': 'unanswered', 'count': 200})
         try:
             unread_msg = [i['last_message'] for i in unread_msg['response']['items']]
             for msg in unread_msg:
