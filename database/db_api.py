@@ -10,7 +10,7 @@ db = peewee.SqliteDatabase(db_filename, pragmas={'journal_mode': 'wal',
                                                  'foreign_keys': 1,
                                                  'ignore_check_constraints': 0,
                                                  'synchronous': 0})
-
+profile_actual_time = 31 * 24 * 60 * 60
 
 class User(peewee.Model):
     id = peewee.IntegerField(unique=True)
@@ -380,13 +380,15 @@ def suit_by_parameters(profile_id, parameter_list, count, offset):
         not_have_similarity = ns_union.select(peewee.fn.COUNT() > 0).where(ns_union.c.profile_id == RpProfile.id)
 
         user_id = RpProfile.select(RpProfile.owner_id).where(RpProfile.id == profile_id)
+        actual_time = time.time() - profile_actual_time
 
         profiles_list = RpProfile\
             .select()\
             .where(peewee.Tuple(True).in_(have_similarity) &
                    peewee.Tuple(False).in_(not_have_similarity) &
                    RpProfile.owner_id.not_in(user_id) &
-                   ~RpProfile.search_preset)\
+                   ~RpProfile.search_preset &
+                   (RpProfile.create_date > actual_time))\
             .order_by(similarity_count)\
             .limit(count).offset(offset)
         # print('\n\nprofiles_list\n', profiles_list.dicts())

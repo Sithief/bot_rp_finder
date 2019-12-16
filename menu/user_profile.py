@@ -1,10 +1,10 @@
 import json
 import logging
+import time
 from bot_rp_finder.vk_api import vk_api
 from bot_rp_finder.database import db_api
 from bot_rp_finder.menu import system
 
-genders = ['Мужской', 'Женский', 'Не указано']
 # создание и изменение анкет
 
 
@@ -27,11 +27,13 @@ def get_menus():
 
 def user_profiles(user_message):
     profiles = db_api.RpProfile().get_user_profiles(user_message['from_id'])
-    message = 'Список ваших анкет:'
+    message = 'Список ваших анкет:\n' \
+              'В скобках указано количество дней, которое анкета будет актуальна. Просто откройте анкету для обновления'
     pr_buttons = list()
     for num, pr in enumerate(profiles):
-        message += f'\n{num+1}){pr.name}'
-        pr_buttons.append([vk_api.new_button(pr.name,
+        days_actual = int((db_api.profile_actual_time - (time.time() - pr.create_date)) / (24 * 60 * 60))
+        message += f'\n{num+1}){pr.name} ({days_actual})'
+        pr_buttons.append([vk_api.new_button(f'{pr.name} ({days_actual})',
                                              {'m_id': 'change_profile',
                                               'args': {'profile_id': pr.id}})])
 
@@ -78,6 +80,10 @@ def change_profile(user_message):
     message = system.rp_profile_display(user_info.item_id)
     if 'attachment' not in message:
         return message
+
+    profile = db_api.RpProfile().get_profile(user_info.item_id)
+    profile.create_date = int(time.time())
+    profile.save()
 
     user_info.menu_id = 'change_profile'
     user_info.save()
