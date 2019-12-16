@@ -31,7 +31,7 @@ def user_profiles(user_message):
               'В скобках указано количество дней, которое анкета будет актуальна. Просто откройте анкету для обновления'
     pr_buttons = list()
     for num, pr in enumerate(profiles):
-        days_actual = int((db_api.profile_actual_time - (time.time() - pr.create_date)) / (24 * 60 * 60))
+        days_actual = max(int((db_api.profile_actual_time - (time.time() - pr.create_date)) / (24 * 60 * 60)), 0)
         message += f'\n{num+1}){pr.name} ({days_actual})'
         pr_buttons.append([vk_api.new_button(f'{pr.name} ({days_actual})',
                                              {'m_id': 'change_profile',
