@@ -40,6 +40,15 @@ class User(peewee.Model):
         except peewee.IntegrityError:
             return self.get_user(user_id)
 
+    def default_settings(self, user_id):
+        user = self.get_user(user_id)
+        if user:
+            user.menu_id = 'main'
+            user.item_id = -1
+            user.tmp_item_id = -1
+            user.list_iter = 0
+            user.save()
+
 
 class RpProfile(peewee.Model):
     search_preset = peewee.BooleanField(default=False)
@@ -254,19 +263,6 @@ class ProfileOptionalTagList(ProfileAdditionalField):
     item = peewee.ForeignKeyField(additional_field, on_delete='cascade')
 
 
-class Notification(peewee.Model):
-    owner_id = peewee.IntegerField(default=0)
-    title = peewee.CharField()
-    is_read = peewee.BooleanField(default=False)
-    create_time = peewee.IntegerField(default=0)
-    description = peewee.CharField(default='')
-    attachment = peewee.CharField(default='[]')
-    buttons = peewee.CharField(default='[]')
-
-    class Meta:
-        database = db
-
-
 class AvailableActions(peewee.Model):
     user_id = peewee.IntegerField(primary_key=True)
     actions = peewee.CharField()
@@ -293,37 +289,56 @@ class AvailableActions(peewee.Model):
         return action in available_actions
 
 
-def create_notification(owner_id, title):
-    new_notification = Notification.create(owner_id=owner_id, title=title)
-    return new_notification
+class Notification(peewee.Model):
+    owner_id = peewee.IntegerField(default=0)
+    title = peewee.CharField()
+    is_read = peewee.BooleanField(default=False)
+    create_time = peewee.IntegerField(default=0)
+    description = peewee.CharField(default='')
+    attachment = peewee.CharField(default='[]')
+    buttons = peewee.CharField(default='[]')
 
+    class Meta:
+        database = db
 
-def get_user_notifications(owner_id, count=8):
-    try:
-        notifications = Notification.select()\
-            .where(Notification.owner_id == owner_id)\
-            .order_by(Notification.create_time.desc())\
-            .limit(count)
-        return notifications
-    except Notification.DoesNotExist:
-        return []
+    def create_item(self, owner_id, title):
+        new_notification = self.create(owner_id=owner_id, title=title)
+        return new_notification
 
+    def get_item_list(self, owner_id, count=8):
+        try:
+            notifications = self.select()\
+                .where(self._schema.model.owner_id == owner_id)\
+                .order_by(self._schema.model.create_time.desc())\
+                .limit(count)
+            return notifications
+        except self.DoesNotExist:
+            return []
 
-def get_notification(notofocation_id):
-    try:
-        notifications = Notification.get(Notification.id == notofocation_id)
-        return notifications
-    except Notification.DoesNotExist:
-        return []
+    def get_item(self, notofocation_id):
+        try:
+            notifications = self.get(self._schema.model.id == notofocation_id)
+            return notifications
+        except self.DoesNotExist:
+            return []
 
+    def delete_item(self, notification_id):
+        try:
+            deleted_notification = self.delete().where(self._schema.model.id == notification_id)
+            deleted_notification.execute()
+            return True
+        except self.DoesNotExist:
+            return False
 
-def delete_notification(notification_id):
-    try:
-        deleted_notification = Notification.delete().where(Notification.id == notification_id)
-        deleted_notification.execute()
-        return True
-    except Notification.DoesNotExist:
-        return False
+    def get_new_items(self):
+        try:
+            notifications = self.select()\
+                .where(~self._schema.model.is_read)\
+                .order_by(self._schema.model.create_time.desc())\
+                .group_by(self._schema.model.owner_id)
+            return notifications
+        except self.DoesNotExist:
+            return []
 
 
 def suit_by_parameters(profile_id, parameter_list, count, offset):

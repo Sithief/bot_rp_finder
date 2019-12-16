@@ -137,6 +137,15 @@ return admins.items;
             return []
         return admins['response']
 
+    def send_notification(self, peer_id, payload):
+        last_message = self.request_get('messages.getHistory', {'count': 1, 'peer_id': peer_id})
+        if 'response' not in last_message:
+            logging.error(last_message)
+            return False
+        items = last_message['response']['items']
+        if items and time.time() - items[0]['date'] > 60 * 60:
+            return self.msg_send(peer_id, payload)
+
 
 class UserApi(object):
     def __init__(self, access_token, group_id, last_reques_time, name='name', version='5.92'):

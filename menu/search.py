@@ -6,6 +6,7 @@ from bot_rp_finder.database import db_api
 from bot_rp_finder.menu import system
 from bot_rp_finder.menu import user_profile
 from bot_rp_finder.menu import text_extension as t_ext
+from bot_rp_finder.menu import notification
 
 
 def get_menus():
@@ -289,18 +290,18 @@ def show_player_profile(user_message):
             if user_message['payload']['args']['offer']:
                 if not role_offer:
                     new_offer = db_api.RoleOffer().create_offer(user_info.id, user_info.tmp_item_id)
+                    owner_id = new_offer.to_owner_id
                     if db_api.RoleOffer().get_offer_from_profile(user_info.tmp_item_id, user_info.id):
-                        notification = db_api.create_notification(new_offer.to_owner_id, 'Ответ на предложение ролевой')
-                        notification.description = f'Пользователь [id{user_info.id}|{user_info.name}] тоже' \
-                                                   f' хочет с вами сыграть. Вы можете просмотреть ' \
-                                                   f'{t_ext.gender_msg("его", "её", user_info.is_fem)} анкеты.'
+                        title = 'Ответ на предложение ролевой'
+                        description = f'Пользователь [id{user_info.id}|{user_info.name}] тоже' \
+                                      f' хочет с вами сыграть. Вы можете просмотреть ' \
+                                      f'{t_ext.gender_msg("его", "её", user_info.is_fem)} анкеты.'
                     else:
-                        notification = db_api.create_notification(new_offer.to_owner_id, 'Предложение ролевой')
-                        notification.description = f'Пользователь [id{user_info.id}|{user_info.name}] ' \
-                                                   f'{t_ext.gender_msg("предожил", "предожила", user_info.is_fem)}' \
-                                                   f' вам ролевую, вы можете просмотреть ' \
-                                                   f'{t_ext.gender_msg("его", "её", user_info.is_fem)} анкеты.'
-                    notification.create_time = int(time.time())
+                        title = 'Предложение ролевой'
+                        description = f'Пользователь [id{user_info.id}|{user_info.name}] ' \
+                                      f'{t_ext.gender_msg("предожил", "предожила", user_info.is_fem)}' \
+                                      f' вам ролевую, вы можете просмотреть ' \
+                                      f'{t_ext.gender_msg("его", "её", user_info.is_fem)} анкеты.'
                     buttons = list()
                     profiles = db_api.RpProfile().get_user_profiles(user_message['from_id'])
                     for pr in profiles:
@@ -310,8 +311,7 @@ def show_player_profile(user_message):
                                                  'btn_back': {'label': 'Вернуться к уведомлению',
                                                               'm_id': 'notification_display',
                                                               'args': None}}})
-                    notification.buttons = json.dumps(buttons, ensure_ascii=False)
-                    notification.save()
+                    notification.create_notification(owner_id, title, description, buttons)
                 else:
                     role_offer.actual = True
                     role_offer.save()

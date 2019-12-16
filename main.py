@@ -10,6 +10,7 @@ try:
     from bot_rp_finder.vk_api.Keys import Keys
     from bot_rp_finder.database import db_api
     from bot_rp_finder.dropbox_api import dropbox_backup
+    from bot_rp_finder.menu import notification
 except:
     sys.path.append('../')
     from bot_rp_finder.menu import menu
@@ -18,6 +19,7 @@ except:
     from bot_rp_finder.vk_api.Keys import Keys
     from bot_rp_finder.database import db_api
     from bot_rp_finder.dropbox_api import dropbox_backup
+    from bot_rp_finder.menu import notification
 
 
 def init_logging():
@@ -116,10 +118,14 @@ if __name__ == '__main__':
             changes_count += 1
             logging.info(timer.quick_stat('total'))
 
-        elif changes_count > 10:
+        elif changes_count > 1:
             timer.output()
             changes_count = 0
             timer.start('dropbox')
             dropbox_backup.backup_db()
             timer.time_stamp('dropbox')
+
+            timer.start('new notifications')
+            notification.send_unread_notifications(bot_api)
+            timer.time_stamp('new notifications')
 

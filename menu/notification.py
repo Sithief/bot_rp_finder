@@ -1,5 +1,6 @@
 import time
 import json
+import logging
 from bot_rp_finder.vk_api import vk_api
 from bot_rp_finder.database import db_api
 from bot_rp_finder.menu import system
@@ -15,8 +16,16 @@ def get_menus():
 # уведомления
 
 
+def create_notification(owner_id, title, description, buttons):
+    notification = db_api.Notification().create_item(owner_id, title)
+    notification.description = description
+    notification.create_time = int(time.time())
+    notification.buttons = json.dumps(buttons, ensure_ascii=False)
+    notification.save()
+
+
 def notifications(user_message):
-    notifications_list = db_api.get_user_notifications(user_message['from_id'], 15)
+    notifications_list = db_api.Notification().get_item_list(user_message['from_id'], 15)
     message = 'Список уведомлений'
     nt_buttons = list()
     for num, nt in enumerate(notifications_list):
@@ -33,18 +42,7 @@ def notifications(user_message):
     return {'message': message, 'keyboard': nt_buttons + [[button_main]]}
 
 
-def notification_display(user_message):
-    user_info = db_api.User().get_user(user_message['from_id'])
-    if user_message['payload']['args'] and 'nt_id' in user_message['payload']['args']:
-        user_info.item_id = user_message['payload']['args']['nt_id']
-        user_info.save()
-
-    nt_info = db_api.get_notification(user_info.item_id)
-    if not nt_info:
-        return system.access_error()
-
-    nt_info.is_read = True
-    nt_info.save()
+def notification_constructor(nt_info):
     time_form = '%d.%m.%y %H:%M' if time.time() - nt_info.create_time > 24*60*60 else '%H:%M:%S'
     notification = dict({'message': ''})
     notification['message'] += f'Уведомление получено в: ' \
@@ -59,3 +57,37 @@ def notification_display(user_message):
     notification['keyboard'].append([vk_api.new_button('Вернуться к уведомлениям',
                                                        {'m_id': 'notifications', 'args': None}, 'primary')])
     return notification
+
+
+def notification_display(user_message):
+    user_info = db_api.User().get_user(user_message['from_id'])
+    if user_message['payload']['args'] and 'nt_id' in user_message['payload']['args']:
+        user_info.item_id = user_message['payload']['args']['nt_id']
+        user_info.save()
+
+    nt_info = db_api.Notification().get_item(user_info.item_id)
+    if not nt_info:
+        return system.access_error()
+
+    nt_info.is_read = True
+    nt_info.save()
+    notification = notification_constructor(nt_info)
+
+    return notification
+
+
+def send_unread_notifications(msg_vk_api):
+    users_notifications = db_api.Notification().get_new_items()
+    for nt_info in users_notifications:
+        message = notification_constructor(nt_info)
+        actions = vk_api.get_actions_from_buttons(message['keyboard'])
+        message['message'] = 'Вы получили новое уведомление!\n\n' + message['message']
+        if msg_vk_api.send_notification(nt_info.owner_id, message):
+            db_api.AvailableActions().update_actions(nt_info.owner_id, actions)
+            nt_info.is_read = True
+            nt_info.save()
+            db_api.User().default_settings(nt_info.owner_id)
+            user_info = db_api.User().get_user(nt_info.owner_id)
+            user_info.item_id = nt_info.id
+            user_info.save()
+            logging.info(f'send notification {nt_info.owner_id}')
