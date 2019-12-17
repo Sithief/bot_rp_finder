@@ -327,7 +327,6 @@ def show_player_profile(user_message):
                                               {'m_id': 'show_all_player_profiles',
                                                'args': {'player_id': profile_owner}})
     button_back = vk_api.new_button('Назад', {'m_id': btn_back['m_id'], 'args': btn_back.get('args', None)}, 'primary')
-    print('profile button back', button_back)
     message.update({'keyboard': [[button_block, button_offer], [button_other_profiles], [button_back]]})
     return message
 
@@ -350,15 +349,9 @@ def send_offer(user_info, add_offer):
                                   f'{t_ext.gender_msg("предожил", "предожила", user_info.is_fem)}' \
                                   f' вам ролевую, вы можете просмотреть ' \
                                   f'{t_ext.gender_msg("его", "её", user_info.is_fem)} анкеты.'
-                buttons = list()
-                profiles = db_api.RpProfile().get_user_profiles(user_info.id)
-                for pr in profiles:
-                    buttons.append({'label': pr.name,
-                                    'm_id': 'show_player_profile',
-                                    'args': {'profile_id': pr.id,
-                                             'btn_back': {'label': 'Вернуться к уведомлению',
-                                                          'm_id': 'notification_display',
-                                                          'args': None}}})
+                buttons = [{'label': 'Анкеты пользователя',
+                            'm_id': 'show_all_player_profiles',
+                            'args': {'player_id': user_info.id}}]
                 notification.create_notification(owner_id, title, description, buttons)
             else:
                 role_offer.actual = True
@@ -392,10 +385,11 @@ def show_all_player_profiles(user_message):
     else:
         message = 'Список анкет:\n'
         for num, pr in enumerate(profiles):
-            message += f'\n{num+1}){pr.name}'
+            message += f'\n{num+1}) {pr.name}'
             pr_buttons.append([vk_api.new_button(f'{pr.name}', {
                 'm_id': 'show_player_profile',
-                'args': {'btn_back': {'m_id': 'show_all_player_profiles',
+                'args': {'profile_id': pr.id,
+                         'btn_back': {'m_id': 'show_all_player_profiles',
                                       'args': {'player_id': user_message['payload']['args']['player_id']}}}})])
 
     user_menu = db_api.User().get_user(user_message['from_id']).menu_id
