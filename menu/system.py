@@ -51,7 +51,7 @@ def input_title_check(message_text, title_len=25):
     return ''
 
 
-def input_description_check(message_text, description_len=500, lines_count=15):
+def input_description_check(message_text, description_len=3000, lines_count=35):
     if len(message_text) > description_len:
         message = f'Длина описания превосходит {description_len} символов.\n' \
                   f'Постарайтесь сократить описание, оставив только самое важное.'
