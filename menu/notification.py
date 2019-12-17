@@ -27,6 +27,9 @@ def create_notification(owner_id, title, description, buttons):
 def notifications(user_message):
     notifications_list = db_api.Notification().get_item_list(user_message['from_id'], 15)
     message = 'Список уведомлений'
+    user_info = db_api.User().get_user(user_message['from_id'])
+    user_info.menu_id = 'notifications'
+    user_info.save()
     nt_buttons = list()
     for num, nt in enumerate(notifications_list):
         color = 'positive'
