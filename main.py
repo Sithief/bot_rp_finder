@@ -4,7 +4,7 @@ import logging
 import traceback
 import sys
 try:
-    from bot_rp_finder.menu import menu
+    from bot_rp_finder.menu import menu, user_profile
     from bot_rp_finder.menu.execute_time import Timer
     from bot_rp_finder.vk_api import vk_api, longpoll, msg_send
     from bot_rp_finder.vk_api.Keys import Keys
@@ -13,7 +13,7 @@ try:
     from bot_rp_finder.menu import notification
 except:
     sys.path.append('../')
-    from bot_rp_finder.menu import menu
+    from bot_rp_finder.menu import menu, user_profile
     from bot_rp_finder.menu.execute_time import Timer
     from bot_rp_finder.vk_api import vk_api, longpoll, msg_send
     from bot_rp_finder.vk_api.Keys import Keys
@@ -97,11 +97,12 @@ if __name__ == '__main__':
         timer.start('total')
         for msg in new_messages:
             print('usr msg:', msg)
-            if not db_api.User().get_user(msg['from_id']):
-                user_info = bot_api.get_user_info(msg['from_id'])
-                db_api.User().create_user(user_id=user_info['id'],
-                                          name=user_info['first_name'],
-                                          is_fem=user_info['sex'] % 2)
+            user_info = db_api.User().get_user(msg['from_id'])
+            if not user_info:
+                vk_user_info = bot_api.get_user_info(msg['from_id'])
+                user_info = db_api.User().create_user(user_id=vk_user_info['id'],
+                                                      name=vk_user_info['first_name'],
+                                                      is_fem=vk_user_info['sex'] % 2)
                 bot_message = menu.main(msg)
 
             else:
@@ -111,7 +112,13 @@ if __name__ == '__main__':
 
             actions = vk_api.get_actions_from_buttons(bot_message['keyboard'])
             db_api.AvailableActions().update_actions(msg['from_id'], actions)
-            msg_send_stdin.put((msg['peer_id'], bot_message))
+            if user_info.menu_id == 'save_images':
+                msg_id = bot_api.msg_send(msg['peer_id'], bot_message)
+                if msg_id:
+                    message = bot_api.msg_get(msg_id)
+                    user_profile.update_images(message)
+            else:
+                msg_send_stdin.put((msg['peer_id'], bot_message))
 
         if new_messages:
             timer.time_stamp('total')

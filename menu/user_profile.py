@@ -13,7 +13,7 @@ def get_menus():
         'user_profiles': user_profiles,
         'create_profile': create_profile, 'delete_profile': delete_profile,
         'change_profile': change_profile,
-        'change_images': change_images, 'input_images': input_images, 'save_images': save_images
+        'change_images': change_images, 'save_images': save_images
     }
     menus.update(ChangeName().get_menu_ids())
     menus.update(ChangeDescription().get_menu_ids())
@@ -337,31 +337,38 @@ def change_images(user_message):
     return {'message': message, 'keyboard': [[button_return]]}
 
 
-def input_images(user_message):
-    # TODO добавить проверки ввода
-    images_attachments = [i['photo'] for i in user_message['attachments'] if i['type'] == 'photo']
-    images = [f"photo{i['owner_id']}_{i['id']}_{i.get('access_key', '')}" for i in images_attachments]
-
-    message = 'Сохранить эти изображения?'
-    button_yes = vk_api.new_button('Да, всё верно', {'m_id': 'save_images', 'args': None}, 'positive')
-    button_no = vk_api.new_button('Нет, загрузить другие', {'m_id': 'change_images', 'args': None}, 'negative')
-    return {'message': message, 'keyboard': [[button_yes], [button_no]], 'attachment': images}
-
-
 def save_images(user_message):
     images_attachments = [i['photo'] for i in user_message['attachments'] if i['type'] == 'photo']
     images = [f"photo{i['owner_id']}_{i['id']}_{i.get('access_key', '')}" for i in images_attachments]
 
     button_return = vk_api.new_button('Вернуться к анкете',
                                       {'m_id': 'change_profile', 'args': None}, 'negative')
-    button_try_again = vk_api.new_button('Отправить изображения снова',
+    button_try_again = vk_api.new_button('Отправить снова',
                                          {'m_id': 'change_images', 'args': None}, 'positive')
     if len(images) == 0:
         message = f'Это не слишком похоже на подходящие для анкеты изображения. Попробуйте загрузить заново.'
         return {'message': message, 'keyboard': [[button_return, button_try_again]]}
 
-    user_info = db_api.User().get_user(user_message['from_id'])
-    rp_profile = db_api.RpProfile().get_profile(user_info.item_id)
-    rp_profile.arts = json.dumps(images, ensure_ascii=False)
-    rp_profile.save()
-    return change_profile(user_message)
+    message = 'Сохранить эти изображения?'
+    button_yes = vk_api.new_button('Да, всё верно', {'m_id': 'change_profile', 'args': 'update_images'}, 'positive')
+    button_no = vk_api.new_button('Нет, загрузить другие', {'m_id': 'change_images', 'args': None}, 'negative')
+    return {'message': message, 'keyboard': [[button_yes], [button_no]], 'attachment': images}
+
+
+def update_images(message):
+    print('update_images', message)
+    if not message:
+        return False
+    images_attachments = [i['photo'] for i in message['attachments'] if i['type'] == 'photo']
+    images = [f"photo{i['owner_id']}_{i['id']}_{i.get('access_key', '')}" for i in images_attachments]
+
+    print('images', images)
+    user_info = db_api.User().get_user(message['peer_id'])
+    if user_info:
+        rp_profile = db_api.RpProfile().get_profile(user_info.item_id)
+        if rp_profile:
+            rp_profile.arts = json.dumps(images, ensure_ascii=False)
+            rp_profile.save()
+            return True
+    return False
+
