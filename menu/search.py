@@ -18,6 +18,7 @@ def get_menus():
         'change_preset': change_preset,
         # 'choose_profile_to_search': choose_profile_to_search,
         # 'search_by_profile': search_by_profile,
+        'show_all_player_profiles': show_all_player_profiles,
         'show_player_profile': show_player_profile,
     }
     menus.update(ChangeName().get_menu_ids())
@@ -168,9 +169,13 @@ class ChangeName(user_profile.InputText):
 def search_by_preset(user_message):
     profiles_per_page = 15
     user_info = db_api.User().get_user(user_message['from_id'])
-    if user_message['payload']['args'] and 'iter' in user_message['payload']['args']:
+    user_info.menu_id = 'search_by_preset'
+    user_info.save()
+    try:
         user_info.list_iter = user_message['payload']['args']['iter']
         user_info.save()
+    except:
+        pass
 
     offset = user_info.list_iter * profiles_per_page
     suitable_profiles = db_api.find_suitable_profiles(user_info.item_id, count=profiles_per_page+1, offset=offset)
@@ -290,8 +295,10 @@ def show_player_profile(user_message):
         block_user(user_info, user_message['payload']['args']['block'])
 
     message = system.rp_profile_display(user_info.tmp_item_id)
-    role_offer = db_api.RoleOffer().get_offer_to_profile(user_info.id, user_info.tmp_item_id)
+    if message == system.access_error():
+        return message
 
+    role_offer = db_api.RoleOffer().get_offer_to_profile(user_info.id, user_info.tmp_item_id)
     if role_offer and role_offer.actual:
         button_offer = vk_api.new_button('Отменить предложение',
                                          {'m_id': 'show_player_profile',
@@ -315,8 +322,13 @@ def show_player_profile(user_message):
                                           'args': {'block': True, 'btn_back': btn_back}},
                                          'negative')
 
-    button_back = vk_api.new_button(btn_back['label'], {'m_id': btn_back['m_id'], 'args': btn_back.get('args', None)})
-    message.update({'keyboard': [[button_block, button_offer], [button_back]]})
+    profile_owner = db_api.RpProfile().get_profile(user_info.tmp_item_id).owner_id
+    button_other_profiles = vk_api.new_button('другое анкеты пользователя',
+                                              {'m_id': 'show_all_player_profiles',
+                                               'args': {'player_id': profile_owner}})
+    button_back = vk_api.new_button('Назад', {'m_id': btn_back['m_id'], 'args': btn_back.get('args', None)}, 'primary')
+    print('profile button back', button_back)
+    message.update({'keyboard': [[button_block, button_offer], [button_other_profiles], [button_back]]})
     return message
 
 
@@ -355,7 +367,7 @@ def send_offer(user_info, add_offer):
             role_offer.actual = False
             role_offer.save()
     except Exception as e:
-        logging.error(f'show_player_profile: {e}')
+        logging.error(f'sent offer: {e}')
         pass
 
 
@@ -368,3 +380,24 @@ def block_user(user_info, add_block):
             db_api.BlockedUser().delete_from_list(user_info.id, block_user_id)
         elif not blocked and add_block:
             db_api.BlockedUser().add(user_info.id, block_user_id)
+
+
+def show_all_player_profiles(user_message):
+    if not user_message['payload']['args'] or 'player_id' not in user_message['payload']['args']:
+        return system.access_error()
+    profiles = db_api.RpProfile().get_user_profiles(user_message['payload']['args']['player_id'])
+    pr_buttons = list()
+    if not profiles:
+        message = 'Список анкет пуст'
+    else:
+        message = 'Список анкет:\n'
+        for num, pr in enumerate(profiles):
+            message += f'\n{num+1}){pr.name}'
+            pr_buttons.append([vk_api.new_button(f'{pr.name}', {
+                'm_id': 'show_player_profile',
+                'args': {'btn_back': {'m_id': 'show_all_player_profiles',
+                                      'args': {'player_id': user_message['payload']['args']['player_id']}}}})])
+
+    user_menu = db_api.User().get_user(user_message['from_id']).menu_id
+    button_back = vk_api.new_button('Назад', {'m_id': user_menu}, 'primary')
+    return {'message': message, 'keyboard': pr_buttons + [[button_back]]}
