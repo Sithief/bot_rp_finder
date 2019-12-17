@@ -283,44 +283,11 @@ def show_player_profile(user_message):
     else:
         btn_back = {'label': 'В главное меню', 'm_id': 'main', 'args': None}
 
+    if 'offer' in user_message['payload']['args']:
+        send_offer(user_info, user_message['payload']['args']['offer'])
 
-    try:
-        if 'offer' in user_message['payload']['args']:
-            role_offer = db_api.RoleOffer().get_offer_to_profile(user_info.id, user_info.tmp_item_id)
-            if user_message['payload']['args']['offer']:
-                if not role_offer:
-                    new_offer = db_api.RoleOffer().create_offer(user_info.id, user_info.tmp_item_id)
-                    owner_id = new_offer.to_owner_id
-                    if db_api.RoleOffer().get_offer_from_profile(user_info.tmp_item_id, user_info.id):
-                        title = 'Ответ на предложение ролевой'
-                        description = f'Пользователь [id{user_info.id}|{user_info.name}] тоже' \
-                                      f' хочет с вами сыграть. Вы можете просмотреть ' \
-                                      f'{t_ext.gender_msg("его", "её", user_info.is_fem)} анкеты.'
-                    else:
-                        title = 'Предложение ролевой'
-                        description = f'Пользователь [id{user_info.id}|{user_info.name}] ' \
-                                      f'{t_ext.gender_msg("предожил", "предожила", user_info.is_fem)}' \
-                                      f' вам ролевую, вы можете просмотреть ' \
-                                      f'{t_ext.gender_msg("его", "её", user_info.is_fem)} анкеты.'
-                    buttons = list()
-                    profiles = db_api.RpProfile().get_user_profiles(user_message['from_id'])
-                    for pr in profiles:
-                        buttons.append({'label': pr.name,
-                                        'm_id': 'show_player_profile',
-                                        'args': {'profile_id': pr.id,
-                                                 'btn_back': {'label': 'Вернуться к уведомлению',
-                                                              'm_id': 'notification_display',
-                                                              'args': None}}})
-                    notification.create_notification(owner_id, title, description, buttons)
-                else:
-                    role_offer.actual = True
-                    role_offer.save()
-            else:
-                role_offer.actual = False
-                role_offer.save()
-    except Exception as e:
-        logging.error(f'show_player_profile: {e}')
-        pass
+    if 'block' in user_message['payload']['args']:
+        block_user(user_info, user_message['payload']['args']['block'])
 
     message = system.rp_profile_display(user_info.tmp_item_id)
     role_offer = db_api.RoleOffer().get_offer_to_profile(user_info.id, user_info.tmp_item_id)
@@ -336,6 +303,68 @@ def show_player_profile(user_message):
                                           'args': {'offer': True, 'btn_back': btn_back}},
                                          'positive')
 
+    block = db_api.BlockedUser().is_profile_blocked(user_info.id, user_info.tmp_item_id)
+    if block:
+        button_block = vk_api.new_button('Разблокировать',
+                                         {'m_id': 'show_player_profile',
+                                          'args': {'block': False, 'btn_back': btn_back}},
+                                         'positive')
+    else:
+        button_block = vk_api.new_button('Скрыть анкету',
+                                         {'m_id': 'show_player_profile',
+                                          'args': {'block': True, 'btn_back': btn_back}},
+                                         'negative')
+
     button_back = vk_api.new_button(btn_back['label'], {'m_id': btn_back['m_id'], 'args': btn_back.get('args', None)})
-    message.update({'keyboard': [[button_offer], [button_back]]})
+    message.update({'keyboard': [[button_block, button_offer], [button_back]]})
     return message
+
+
+def send_offer(user_info, add_offer):
+    try:
+        role_offer = db_api.RoleOffer().get_offer_to_profile(user_info.id, user_info.tmp_item_id)
+        if add_offer:
+            if not role_offer:
+                new_offer = db_api.RoleOffer().create_offer(user_info.id, user_info.tmp_item_id)
+                owner_id = new_offer.to_owner_id
+                if db_api.RoleOffer().get_offer_from_profile(user_info.tmp_item_id, user_info.id):
+                    title = 'Ответ на предложение ролевой'
+                    description = f'Пользователь [id{user_info.id}|{user_info.name}] тоже' \
+                                  f' хочет с вами сыграть. Вы можете просмотреть ' \
+                                  f'{t_ext.gender_msg("его", "её", user_info.is_fem)} анкеты.'
+                else:
+                    title = 'Предложение ролевой'
+                    description = f'Пользователь [id{user_info.id}|{user_info.name}] ' \
+                                  f'{t_ext.gender_msg("предожил", "предожила", user_info.is_fem)}' \
+                                  f' вам ролевую, вы можете просмотреть ' \
+                                  f'{t_ext.gender_msg("его", "её", user_info.is_fem)} анкеты.'
+                buttons = list()
+                profiles = db_api.RpProfile().get_user_profiles(user_info.id)
+                for pr in profiles:
+                    buttons.append({'label': pr.name,
+                                    'm_id': 'show_player_profile',
+                                    'args': {'profile_id': pr.id,
+                                             'btn_back': {'label': 'Вернуться к уведомлению',
+                                                          'm_id': 'notification_display',
+                                                          'args': None}}})
+                notification.create_notification(owner_id, title, description, buttons)
+            else:
+                role_offer.actual = True
+                role_offer.save()
+        else:
+            role_offer.actual = False
+            role_offer.save()
+    except Exception as e:
+        logging.error(f'show_player_profile: {e}')
+        pass
+
+
+def block_user(user_info, add_block):
+    blocked = db_api.BlockedUser().is_profile_blocked(user_info.id, user_info.tmp_item_id)
+    block_profile = db_api.RpProfile().get_profile(user_info.tmp_item_id)
+    if block_profile:
+        block_user_id = block_profile.owner_id
+        if blocked and not add_block:
+            db_api.BlockedUser().delete_from_list(user_info.id, block_user_id)
+        elif not blocked and add_block:
+            db_api.BlockedUser().add(user_info.id, block_user_id)

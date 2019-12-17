@@ -12,6 +12,7 @@ db = peewee.SqliteDatabase(db_filename, pragmas={'journal_mode': 'wal',
                                                  'synchronous': 0})
 profile_actual_time = 31 * 24 * 60 * 60
 
+
 class User(peewee.Model):
     id = peewee.IntegerField(unique=True)
     name = peewee.CharField()
@@ -147,6 +148,53 @@ class RoleOffer(peewee.Model):
                 return []
         except self.DoesNotExist:
             return []
+
+
+class BlockedUser(peewee.Model):
+    user = peewee.ForeignKeyField(User, on_delete='cascade')
+    blocked = peewee.ForeignKeyField(User, on_delete='cascade')
+
+    class Meta:
+        database = db
+        primary_key = peewee.CompositeKey('user', 'blocked')
+
+    def add(self, user_id, blocked_id):
+        try:
+            user = User.get(User.id == user_id)
+            blocked_user = User.get(User.id == blocked_id)
+            added_item = self.create(user=user, blocked=blocked_user)
+            return added_item
+        except Exception as error_msg:
+            logging.error(error_msg)
+            return False
+
+    def is_profile_blocked(self, user_id, blocked_profile_id):
+        try:
+            blocked_id = RpProfile.select(RpProfile.owner_id).where(RpProfile.id == blocked_profile_id)
+            item = self.select().where((self._schema.model.user_id == user_id) &
+                                       self._schema.model.blocked_id.in_(blocked_id))
+            if len(item):
+                return True
+            else:
+                return False
+        except self.DoesNotExist:
+            return False
+
+    def get_list(self, user_id):
+        try:
+            item_list = self.select().join(User).where(self._schema.model.user_id == user_id)
+            return item_list
+        except self.DoesNotExist:
+            return []
+
+    def delete_from_list(self, user_id, blocked_id):
+        try:
+            delete_item = self.delete().where((self._schema.model.user_id == user_id) &
+                                              (self._schema.model.blocked_id == blocked_id))
+            delete_item.execute()
+            return True
+        except self.DoesNotExist:
+            return False
 
 
 class AdditionalField(peewee.Model):
@@ -380,6 +428,7 @@ def suit_by_parameters(profile_id, parameter_list, count, offset):
         not_have_similarity = ns_union.select(peewee.fn.COUNT() > 0).where(ns_union.c.profile_id == RpProfile.id)
 
         user_id = RpProfile.select(RpProfile.owner_id).where(RpProfile.id == profile_id)
+        blocked_users = BlockedUser.select(BlockedUser.blocked_id).where(BlockedUser.user_id == user_id)
         actual_time = time.time() - profile_actual_time
 
         profiles_list = RpProfile\
@@ -388,12 +437,12 @@ def suit_by_parameters(profile_id, parameter_list, count, offset):
                    peewee.Tuple(False).in_(not_have_similarity) &
                    RpProfile.owner_id.not_in(user_id) &
                    ~RpProfile.search_preset &
-                   (RpProfile.create_date > actual_time))\
-            .order_by(similarity_count)\
+                   (RpProfile.create_date > actual_time) &
+                   RpProfile.owner_id.not_in(blocked_users))\
+            .order_by(similarity_count, RpProfile.create_date.desc())\
             .limit(count).offset(offset)
         # print('\n\nprofiles_list\n', profiles_list.dicts())
-        profiles_list = list(profiles_list)
-        profiles_list.reverse()
+        # profiles_list = list(profiles_list)
         return profiles_list
     except RpProfile.DoesNotExist:
         return []
@@ -427,6 +476,7 @@ def init_db():
     AvailableActions.create_table()
     OptionalTag.create_table()
     ProfileOptionalTagList.create_table()
+    BlockedUser.create_table()
 
 
 def update_admins(admin_list):
