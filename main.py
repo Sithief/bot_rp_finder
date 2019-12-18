@@ -71,6 +71,10 @@ if __name__ == '__main__':
     init_logging()
     sys.excepthook = foo
     dropbox_backup.backup_db()
+
+    if 'update_db' in sys.argv:
+        db_api.update_db()
+
     bot_api = vk_api.Api(Keys().get_group_token(), 'main')
     if not bot_api.valid:
         logging.error('Токен для VK API не подходит')

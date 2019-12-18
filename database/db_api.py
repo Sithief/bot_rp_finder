@@ -489,6 +489,29 @@ def update_admins(admin_list):
                 user.save()
 
 
+def update_db():
+    import playhouse.migrate as playhouse_migrate
+
+    db_migrate = peewee.SqliteDatabase(db_filename, pragmas={'journal_mode': 'wal',
+                                                             'cache_size': 64,
+                                                             'foreign_keys': 0,
+                                                             'ignore_check_constraints': 0,
+                                                             'synchronous': 0})
+    migrator = playhouse_migrate.SqliteMigrator(db_migrate)
+    try:
+        playhouse_migrate.migrate(
+            migrator.add_column('RpProfile', 'show_link', peewee.BooleanField(default=0)),
+        )
+    except Exception as e:
+        print(e)
+
+    #         playhouse_migrate.migrate(
+    #             migrator.add_column('RpProfile', 'show_link', RpProfile.show_link),
+    #             # migrator.rename_column('ProfileSettingList', 'item_id', 'item'),
+    #             # migrator.drop_column('RoleOffer', 'to_profile_id')
+    #         )
+
+
 if __name__ == "__main__":
     # logging.basicConfig(format='%(filename)-15s[LINE:%(lineno)d]# %(levelname)-8s [%(asctime)s]  %(message)s',
     #                     level=logging.INFO)
@@ -502,23 +525,5 @@ if __name__ == "__main__":
     #     print(f'{t.id} - {t.title}')
     # t_id = int(input('delete id'))
     # print(TestField().delete_field(t_id))
-
-    import playhouse.migrate as playhouse_migrate
-
-    db_migrate = peewee.SqliteDatabase(db_filename, pragmas={'journal_mode': 'wal',
-                                                             'cache_size': 64,
-                                                             'foreign_keys': 0,
-                                                             'ignore_check_constraints': 0,
-                                                             'synchronous': 0})
-    migrator = playhouse_migrate.SqliteMigrator(db_migrate)
-
-    playhouse_migrate.migrate(
-        migrator.add_column('RpProfile', 'show_link', peewee.BooleanField(default=0)),
-    )
-
-    #         playhouse_migrate.migrate(
-    #             migrator.add_column('RpProfile', 'show_link', RpProfile.show_link),
-    #             # migrator.rename_column('ProfileSettingList', 'item_id', 'item'),
-    #             # migrator.drop_column('RoleOffer', 'to_profile_id')
-    #         )
+    update_db()
     pass
