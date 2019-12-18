@@ -317,13 +317,13 @@ def show_player_profile(user_message):
                                           'args': {'block': False, 'btn_back': btn_back}},
                                          'positive')
     else:
-        button_block = vk_api.new_button('Скрыть анкету',
+        button_block = vk_api.new_button('Скрыть пользователя',
                                          {'m_id': 'show_player_profile',
                                           'args': {'block': True, 'btn_back': btn_back}},
                                          'negative')
 
     profile_owner = db_api.RpProfile().get_profile(user_info.tmp_item_id).owner_id
-    button_other_profiles = vk_api.new_button('другое анкеты пользователя',
+    button_other_profiles = vk_api.new_button('другие анкеты пользователя',
                                               {'m_id': 'show_all_player_profiles',
                                                'args': {'player_id': profile_owner}})
     button_back = vk_api.new_button('Назад', {'m_id': btn_back['m_id'], 'args': btn_back.get('args', None)}, 'primary')

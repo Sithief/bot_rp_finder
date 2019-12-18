@@ -75,19 +75,24 @@ def change_profile(user_message):
 
     try:
         user_info.item_id = user_message['payload']['args']['profile_id']
-    except Exception as error_msg:
-        logging.error(str(error_msg))
-    message = system.rp_profile_display(user_info.item_id)
-    if 'attachment' not in message:
-        return message
+    except:
+        pass
 
     profile = db_api.RpProfile().get_profile(user_info.item_id)
+    if not profile:
+        return system.access_error()
+
+    try:
+        profile.show_link = user_message['payload']['args']['link']
+    except:
+        pass
     profile.create_date = int(time.time())
     profile.save()
 
     user_info.menu_id = 'change_profile'
     user_info.save()
 
+    message = system.rp_profile_display(user_info.item_id)
     message['message'] = 'Ваша анкета:\n\n' + message['message']
     button_main = vk_api.new_button('Главное меню', {'m_id': 'main', 'args': None}, 'primary')
     buttons_change_name = vk_api.new_button('Имя', {'m_id': ChangeName().menu_names['change']})
@@ -103,9 +108,15 @@ def change_profile(user_message):
                                         'args': {'m_id': 'delete_profile',
                                                  'args': {'profile_id': user_info.item_id}}},
                                        'negative')
+    if profile.show_link:
+        buttons_show_link = vk_api.new_button('Ваша подпись',
+                                              {'m_id': 'change_profile', 'args': {'link': False}}, 'positive')
+    else:
+        buttons_show_link = vk_api.new_button('Ваша подпись',
+                                              {'m_id': 'change_profile', 'args': {'link': True}}, 'negative')
     return {'message': message['message'],
             'attachment': message['attachment'],
-            'keyboard': [[buttons_change_name, buttons_change_description],
+            'keyboard': [[buttons_change_name, buttons_change_description, buttons_show_link],
                          [buttons_change_gender, buttons_change_species],
                          [buttons_change_setting, buttons_change_optional_tag, buttons_change_rp_rating],
                          [buttons_change_images],

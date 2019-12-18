@@ -84,6 +84,9 @@ def rp_profile_display(profile_id):
     if rp_profile.search_preset:
         profile['message'] += f'Название пресета: {rp_profile.name}\n'
     else:
+        if rp_profile.show_link:
+            user = db_api.User().get_user(rp_profile.owner_id)
+            profile['message'] += f'Владелец анкеты: @id{rp_profile.owner_id}({user.name})\n\n'
         profile['message'] += f'Имя: {rp_profile.name}\n'
 
     gender_list, gender_ban_list = get_profile_parameter(db_api.ProfileGenderList(), profile_id)

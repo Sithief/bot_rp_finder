@@ -58,6 +58,7 @@ class RpProfile(peewee.Model):
     description = peewee.CharField(default='')
     arts = peewee.CharField(default='[]')
     create_date = peewee.IntegerField(default=0)
+    show_link = peewee.BooleanField(default=0)
 
     class Meta:
         database = db
@@ -502,13 +503,22 @@ if __name__ == "__main__":
     # t_id = int(input('delete id'))
     # print(TestField().delete_field(t_id))
 
-    # import playhouse.migrate as playhouse_migrate
-    # migrator = playhouse_migrate.SqliteMigrator(db)
-    #
-    # playhouse_migrate.migrate(
-    #     # migrator.add_column('RpProfile', 'search_preset', RpProfile.search_preset),
-    #     # migrator.rename_column('ProfileSettingList', 'item_id', 'item'),
-    #     # migrator.drop_column('RoleOffer', 'to_profile_id')
-    # )
-    # find_suitable_profiles(10)
+    import playhouse.migrate as playhouse_migrate
+
+    db_migrate = peewee.SqliteDatabase(db_filename, pragmas={'journal_mode': 'wal',
+                                                             'cache_size': 64,
+                                                             'foreign_keys': 0,
+                                                             'ignore_check_constraints': 0,
+                                                             'synchronous': 0})
+    migrator = playhouse_migrate.SqliteMigrator(db_migrate)
+
+    playhouse_migrate.migrate(
+        migrator.add_column('RpProfile', 'show_link', peewee.BooleanField(default=0)),
+    )
+
+    #         playhouse_migrate.migrate(
+    #             migrator.add_column('RpProfile', 'show_link', RpProfile.show_link),
+    #             # migrator.rename_column('ProfileSettingList', 'item_id', 'item'),
+    #             # migrator.drop_column('RoleOffer', 'to_profile_id')
+    #         )
     pass
