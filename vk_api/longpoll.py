@@ -53,7 +53,7 @@ class LongPoll(vk_api.Api):
             self.new_long_poll_server()
             return self.long_poll()
 
-        logging.info(f'long poll response: {response}')
+        logging.debug(f'long poll response: {response}')
         updates = []
         try:
             if 'failed' in response:

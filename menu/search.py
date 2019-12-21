@@ -15,7 +15,7 @@ def get_menus():
         'search_by_preset': search_by_preset,
         'choose_preset_to_search': choose_preset_to_search,
         'create_preset': create_preset,
-        'change_preset': change_preset,
+        'delete_preset': delete_preset,
         # 'choose_profile_to_search': choose_profile_to_search,
         # 'search_by_profile': search_by_profile,
         'show_all_player_profiles': show_all_player_profiles,
