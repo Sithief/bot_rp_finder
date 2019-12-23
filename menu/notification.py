@@ -24,12 +24,11 @@ def create_notification(owner_id, title, description, buttons):
     notification.save()
 
 
-def notifications(user_message):
-    notifications_list = db_api.Notification().get_item_list(user_message['from_id'], 15)
+def notifications(user):
+    notifications_list = db_api.Notification().get_item_list(user.info.id, 15)
     message = 'Список уведомлений'
-    user_info = db_api.User().get_user(user_message['from_id'])
-    user_info.menu_id = 'notifications'
-    user_info.save()
+    user.info.menu_id = 'notifications'
+    user.info.save()
     nt_buttons = list()
     for num, nt in enumerate(notifications_list):
         color = 'positive'
@@ -62,13 +61,12 @@ def notification_constructor(nt_info):
     return notification
 
 
-def notification_display(user_message):
-    user_info = db_api.User().get_user(user_message['from_id'])
-    if user_message['payload']['args'] and 'nt_id' in user_message['payload']['args']:
-        user_info.item_id = user_message['payload']['args']['nt_id']
-        user_info.save()
+def notification_display(user):
+    if 'nt_id' in user.menu_args:
+        user.info.item_id = user.menu_args['nt_id']
+        user.info.save()
 
-    nt_info = db_api.Notification().get_item(user_info.item_id)
+    nt_info = db_api.Notification().get_item(user.info.item_id)
     if not nt_info:
         return system.access_error()
 

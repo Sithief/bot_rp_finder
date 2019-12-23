@@ -14,13 +14,13 @@ def get_menus():
 # системные меню
 
 
-def confirm_action(user_message):
+def confirm_action(user):
     button_main = vk_api.new_button('Главное меню', {'m_id': 'main', 'args': None}, 'primary')
     message = 'Вы действительно хотите сделать это?'
     try:
         confirm_btn = vk_api.new_button('Да',
-                                        {'m_id': user_message['payload']['args']['m_id'],
-                                         'args': user_message['payload']['args']['args']},
+                                        {'m_id': user.menu_args['m_id'],
+                                         'args': user.menu_args['args']},
                                         'positive')
         return {'message': message, 'keyboard': [[confirm_btn], [button_main]]}
     except:
@@ -125,11 +125,10 @@ def rp_profile_display(profile_id):
     return profile
 
 
-def empty_func(user_message):
-    user_info = db_api.User().get_user(user_message['from_id'])
+def empty_func(user):
     message = 'Этого меню еще нет, но раз вы сюда пришли, вот вам монетка!'
-    user_info.money += 1
-    user_info.save()
+    user.info.money += 1
+    user.info.save()
     button_1 = vk_api.new_button('Главное меню', {'m_id': 'main', 'args': None}, 'primary')
     return {'message': message, 'keyboard': [[button_1]]}
 
@@ -149,32 +148,32 @@ class InputText:
         button_return = vk_api.new_button('Назад', {'m_id': self.prew_menu, 'args': None}, 'negative')
         return {'message': message, 'keyboard': [[button_return]]}
 
-    def save_text(self, user_message, check_function):
+    def save_text(self, user, check_function):
         self.status = True
-        error_message = check_function(user_message)
+        error_message = check_function(user)
         if error_message:
             button_return = vk_api.new_button('Назад', {'m_id': self.prew_menu, 'args': None}, 'negative')
             button_try_again = vk_api.new_button('Ввести снова', {'m_id': self.next_menu, 'args': None}, 'positive')
             self.status = False
             return {'message': error_message, 'keyboard': [[button_return, button_try_again]]}
-        return {'item_id': self.user_info.item_id, 'text': user_message['text']}
+        return {'item_id': self.user_info.item_id, 'text': user.msg_text}
 
-    def save_title(self, user_message, table_class, success_menu):
-        data = self.save_text(user_message, check_function=input_title_check)
+    def save_title(self, user, table_class, success_menu):
+        data = self.save_text(user, check_function=input_title_check)
         if self.status:
             item = table_class.get_item(data['item_id'])
             item.title = data['text']
             item.save()
-            return success_menu(user_message)
+            return success_menu(user)
         return data
 
-    def save_description(self, user_message, table_class, success_menu):
-        data = self.save_text(user_message, check_function=input_description_check)
+    def save_description(self, user, table_class, success_menu):
+        data = self.save_text(user, check_function=input_description_check)
         if self.status:
             item = table_class.get_item(data['item_id'])
             item.description = data['text']
             item.save()
-            return success_menu(user_message)
+            return success_menu(user)
         return data
 
 

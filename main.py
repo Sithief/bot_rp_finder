@@ -11,6 +11,7 @@ try:
     from bot_rp_finder.database import db_api
     from bot_rp_finder.dropbox_api import dropbox_backup
     from bot_rp_finder.menu import notification
+    from bot_rp_finder.menu.token import Token
 except:
     sys.path.append('../')
     from bot_rp_finder.menu import menu, user_profile
@@ -20,6 +21,7 @@ except:
     from bot_rp_finder.database import db_api
     from bot_rp_finder.dropbox_api import dropbox_backup
     from bot_rp_finder.menu import notification
+    from bot_rp_finder.menu.token import Token
 
 
 def init_logging():
@@ -101,22 +103,22 @@ if __name__ == '__main__':
         timer.start('total')
         for msg in new_messages:
             print('usr msg:', msg)
-            user_info = db_api.User().get_user(msg['from_id'])
-            if not user_info:
+            user_token = Token(msg)
+            if not user_token.info:
                 vk_user_info = bot_api.get_user_info(msg['from_id'])
                 user_info = db_api.User().create_user(user_id=vk_user_info['id'],
                                                       name=vk_user_info['first_name'],
                                                       is_fem=vk_user_info['sex'] % 2)
-                bot_message = menu.main(msg)
+                user_token.update_user_info(user_info, msg)
 
-            else:
-                timer.start(msg.get('payload', {}).get('m_id', 'None'))
-                bot_message = menu.menu_hub(msg)
-                timer.time_stamp(msg.get('payload', {}).get('m_id', 'None'))
+            timer.start(user_token.menu_id)
+            bot_message = menu.menu_hub(user_token)
+            timer.time_stamp(user_token.menu_id)
 
             actions = vk_api.get_actions_from_buttons(bot_message['keyboard'])
             db_api.AvailableActions().update_actions(msg['from_id'], actions)
-            if user_info.menu_id == 'save_images':
+
+            if user_token.menu_id == 'save_images':
                 msg_id = bot_api.msg_send(msg['peer_id'], bot_message)
                 if msg_id:
                     message = bot_api.msg_get(msg_id)

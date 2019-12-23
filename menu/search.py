@@ -33,7 +33,7 @@ def get_menus():
 # поиск со-игроков
 
 
-def profiles_search(user_message):
+def profiles_search(user):
     # message = 'Поиск соигроков'
     # # button_by_profile = vk_api.new_button('Найти соигроков подходящих к анкете',
     # #                                       {'m_id': 'choose_profile_to_search', 'args': None})
@@ -42,12 +42,12 @@ def profiles_search(user_message):
     # return {'message': message, 'keyboard': [[button_by_preset],
     #                                          # [button_by_profile],
     #                                          [button_main]]}
-    return choose_preset_to_search(user_message)
+    return choose_preset_to_search(user)
 
 
-def choose_preset_to_search(user_message):
+def choose_preset_to_search(user):
     message = 'Выберите один из списка ваших поисковых пресетов:'
-    profiles = db_api.RpProfile().get_user_profiles(user_message['from_id'], search_preset=True)
+    profiles = db_api.RpProfile().get_user_profiles(user.info.id, search_preset=True)
     pr_buttons = list()
     for num, pr in enumerate(profiles):
         message += f'\n{num+1}){pr.name}'
@@ -64,19 +64,17 @@ def choose_preset_to_search(user_message):
     return {'message': message, 'keyboard': pr_buttons + [[button_create_preset], [button_main]]}
 
 
-def create_preset(user_message):
-    search_preset = db_api.RpProfile().create_profile(user_message['from_id'], search_preset=True)
-    user_info = db_api.User().get_user(user_message['from_id'])
-    user_info.item_id = search_preset.id
-    user_info.save()
-    return change_preset(user_message)
+def create_preset(user):
+    search_preset = db_api.RpProfile().create_profile(user.info.id, search_preset=True)
+    user.info.item_id = search_preset.id
+    user.info.save()
+    return change_preset(user)
 
 
-def delete_preset(user_message):
-    user_info = db_api.User().get_user(user_message['from_id'])
+def delete_preset(user):
     try:
-        profile = db_api.RpProfile().get_profile(user_info.item_id).name
-        if db_api.RpProfile().delete_profile(user_info.item_id):
+        profile = db_api.RpProfile().get_profile(user.info.item_id).name
+        if db_api.RpProfile().delete_profile(user.info.item_id):
             message = f'Ваш поисковой пресет "{profile}" успешно удален.'
         else:
             message = f'Во время удаления пресета произошла ошибка, попробуйте повторить запрос через некоторое время.'
@@ -87,17 +85,13 @@ def delete_preset(user_message):
     return {'message': message, 'keyboard': [[button_return]]}
 
 
-def change_preset(user_message):
-    user_info = db_api.User().get_user(user_message['from_id'])
+def change_preset(user):
+    if 'item_id' in user.menu_args:
+        user.info.item_id = user.menu_args['item_id']
+    message = system.rp_profile_display(user.info.item_id)
 
-    try:
-        user_info.item_id = user_message['payload']['args']['item_id']
-    except Exception as error_msg:
-        logging.error(str(error_msg))
-    message = system.rp_profile_display(user_info.item_id)
-
-    user_info.menu_id = 'change_preset'
-    user_info.save()
+    user.info.menu_id = 'change_preset'
+    user.info.save()
 
     message['message'] = 'Пресет для поиска:\n\n' + message['message']
     button_main = vk_api.new_button('Назад', {'m_id': 'choose_preset_to_search'}, 'primary')
@@ -110,7 +104,7 @@ def change_preset(user_message):
     buttons_delete = vk_api.new_button('Удалить пресет',
                                        {'m_id': 'confirm_action',
                                         'args': {'m_id': 'delete_preset',
-                                                 'args': {'profile_id': user_info.item_id}}},
+                                                 'args': {'profile_id': user.info.item_id}}},
                                        'negative')
     button_search = vk_api.new_button('Искать по пресету', {'m_id': 'search_by_preset'}, 'positive')
     return {'message': message['message'],
@@ -167,22 +161,18 @@ class ChangeName(user_profile.InputText):
         rp_profile.save()
 
 
-def search_by_preset(user_message):
+def search_by_preset(user):
     profiles_per_page = 15
-    user_info = db_api.User().get_user(user_message['from_id'])
-    user_info.menu_id = 'search_by_preset'
-    user_info.save()
-    try:
-        user_info.list_iter = user_message['payload']['args']['iter']
-        user_info.save()
-    except:
-        pass
+    if 'iter' in user.menu_args:
+        user.info.list_iter = user.menu_args['iter']
+    user.info.menu_id = 'search_by_preset'
+    user.info.save()
 
-    offset = user_info.list_iter * profiles_per_page
-    suitable_profiles = db_api.find_suitable_profiles(user_info.item_id, count=profiles_per_page+1, offset=offset)
+    offset = user.info.list_iter * profiles_per_page
+    suitable_profiles = db_api.find_suitable_profiles(user.info.item_id, count=profiles_per_page+1, offset=offset)
 
-    sent_offers = [pr.to_owner_id for pr in db_api.RoleOffer().get_offers_from_user(user_info.id) if pr.actual]
-    confirmed_offers = [pr.from_owner_id for pr in db_api.RoleOffer().get_offers_to_user(user_info.id) if pr.actual]
+    sent_offers = [pr.to_owner_id for pr in db_api.RoleOffer().get_offers_from_user(user.info.id) if pr.actual]
+    confirmed_offers = [pr.from_owner_id for pr in db_api.RoleOffer().get_offers_to_user(user.info.id) if pr.actual]
     message = 'Список подходящих анкет.\n' \
               'Синим отправленные предложения.\n' \
               'Зелёным - взаимные предложения.'
@@ -202,13 +192,13 @@ def search_by_preset(user_message):
     steps = len(pr_buttons) // 3 * 3
     pr_buttons = [pr_buttons[i:i + 3] for i in range(0, steps, 3)] + [pr_buttons[steps:]]
 
-    prew_color, next_color, prew_iter, next_iter = 'default', 'default', user_info.list_iter, user_info.list_iter
-    if user_info.list_iter > 0:
+    prew_color, next_color, prew_iter, next_iter = 'default', 'default', user.info.list_iter, user.info.list_iter
+    if user.info.list_iter > 0:
         prew_color = 'primary'
-        prew_iter = user_info.list_iter - 1
+        prew_iter = user.info.list_iter - 1
     if len(suitable_profiles) > profiles_per_page:
         next_color = 'primary'
-        next_iter = user_info.list_iter + 1
+        next_iter = user.info.list_iter + 1
     button_prew = vk_api.new_button('Предыдущая страница', {'m_id': 'search_by_preset',
                                                             'args': {'iter': prew_iter}}, prew_color)
     button_next = vk_api.new_button('Следующая страница', {'m_id': 'search_by_preset',
@@ -217,89 +207,27 @@ def search_by_preset(user_message):
     return {'message': message, 'keyboard': pr_buttons + [[button_prew, button_main, button_next]]}
 
 
-# def choose_profile_to_search(user_message):
-#     profiles = user_class.get_user_profiles(user_message['from_id'])
-#     message = 'Выберите из списка ваших анкет ту, для которой нужно найти соигроков'
-#     pr_buttons = list()
-#     for num, pr in enumerate(profiles):
-#         pr_buttons.append([vk_api.new_button(pr.name,
-#                                              {'m_id': 'search_by_profile',
-#                                               'args': {'profile_id': pr.id}})])
-#
-#     button_main = vk_api.new_button('Главное меню', {'m_id': 'main', 'args': None}, 'primary')
-#     return {'message': message, 'keyboard': pr_buttons + [[button_main]]}
-#
-#
-# def search_by_profile(user_message):
-#     profiles_per_page = 4
-#     user_info = user_class.User().get_user(user_message['from_id'])
-#     try:
-#         if 'profile_id' in user_message['payload']['args']:
-#             user_info.item_id = user_message['payload']['args']['profile_id']
-#         if 'iter' in user_message['payload']['args']:
-#             user_info.list_iter = user_message['payload']['args']['iter']
-#         user_info.save()
-#     except:
-#         pass
-#
-#     suitable_profiles = user_class.find_suitable_profiles(user_info.item_id)
-#     sent_profiles = [pr.to_profile_id for pr in user_class.RoleOffer().get_offers_from_user(user_info.id) if pr.actual]
-#     confirmed_users = [pr.from_owner_id for pr in user_class.RoleOffer().get_offers_to_user(user_info.id) if pr.actual]
-#     message = 'Список анкет подходящих к вашей.\n' \
-#               'Синим отправленные предложения.\n' \
-#               'Зелёным - взаимные предложения.'
-#     pr_buttons = list()
-#     for pr in suitable_profiles[user_info.list_iter * profiles_per_page:(user_info.list_iter + 1) * profiles_per_page]:
-#         color = 'default'
-#         if pr.id in sent_profiles:
-#             color = 'primary'
-#             if pr.owner_id in confirmed_users:
-#                 color = 'positive'
-#         pr_buttons.append([vk_api.new_button(pr.name,
-#                                              {'m_id': 'show_player_profile',
-#                                               'args': {'profile_id': pr.id,
-#                                                        'btn_back': {'label': 'К списку анкет',
-#                                                                     'm_id': 'search_by_profile',
-#                                                                     'args': None}
-#                                                        }}, color)])
-#
-#     prew_color, next_color, prew_iter, next_iter = 'default', 'default', user_info.list_iter, user_info.list_iter
-#     if user_info.list_iter > 0:
-#         prew_color = 'primary'
-#         prew_iter = user_info.list_iter - 1
-#     if (user_info.list_iter + 1) * profiles_per_page < len(suitable_profiles):
-#         next_color = 'primary'
-#         next_iter = user_info.list_iter + 1
-#     button_prew = vk_api.new_button('Предыдущая страница', {'m_id': 'search_by_profile',
-#                                                             'args': {'iter': prew_iter}}, prew_color)
-#     button_next = vk_api.new_button('Следующая страница', {'m_id': 'search_by_profile',
-#                                                            'args': {'iter': next_iter}}, next_color)
-#     button_main = vk_api.new_button('Главное меню', {'m_id': 'main', 'args': None}, 'primary')
-#     return {'message': message, 'keyboard': pr_buttons + [[button_prew, button_next]] + [[button_main]]}
+def show_player_profile(user):
+    if 'profile_id' in user.menu_args:
+        user.info.tmp_item_id = user.menu_args['profile_id']
+        user.info.save()
 
-
-def show_player_profile(user_message):
-    user_info = db_api.User().get_user(user_message['from_id'])
-    if 'profile_id' in user_message['payload']['args']:
-        user_info.tmp_item_id = user_message['payload']['args']['profile_id']
-        user_info.save()
-
-    if 'btn_back' in user_message['payload']['args']:
-        btn_back = user_message['payload']['args']['btn_back']
+    if 'btn_back' in user.menu_args:
+        btn_back = user.menu_args['btn_back']
     else:
         btn_back = {'label': 'В главное меню', 'm_id': 'main', 'args': None}
 
-    if 'offer' in user_message['payload']['args']:
-        send_offer(user_info, user_message['payload']['args']['offer'])
+    if 'offer' in user.menu_args:
+        send_offer(user.info, user.menu_args['offer'])
 
-    if 'block' in user_message['payload']['args']:
-        block_user(user_info, user_message['payload']['args']['block'])
+    if 'block' in user.menu_args:
+        block_user(user.info, user.menu_args['block'])
 
-    message = system.rp_profile_display(user_info.tmp_item_id)
+    message = system.rp_profile_display(user.info.tmp_item_id)
     if message == system.access_error():
         return message
 
-    role_offer = db_api.RoleOffer().get_offer_to_profile(user_info.id, user_info.tmp_item_id)
+    role_offer = db_api.RoleOffer().get_offer_to_profile(user.info.id, user.info.tmp_item_id)
     if role_offer and role_offer.actual:
         button_offer = vk_api.new_button('Отменить предложение',
                                          {'m_id': 'show_player_profile',
@@ -311,7 +239,7 @@ def show_player_profile(user_message):
                                           'args': {'offer': True, 'btn_back': btn_back}},
                                          'positive')
 
-    block = db_api.BlockedUser().is_profile_blocked(user_info.id, user_info.tmp_item_id)
+    block = db_api.BlockedUser().is_profile_blocked(user.info.id, user.info.tmp_item_id)
     if block:
         button_block = vk_api.new_button('Разблокировать',
                                          {'m_id': 'show_player_profile',
@@ -323,7 +251,7 @@ def show_player_profile(user_message):
                                           'args': {'block': True, 'btn_back': btn_back}},
                                          'negative')
 
-    profile_owner = db_api.RpProfile().get_profile(user_info.tmp_item_id).owner_id
+    profile_owner = db_api.RpProfile().get_profile(user.info.tmp_item_id).owner_id
     button_other_profiles = vk_api.new_button('другие анкеты пользователя',
                                               {'m_id': 'show_all_player_profiles',
                                                'args': {'player_id': profile_owner}})
@@ -376,10 +304,10 @@ def block_user(user_info, add_block):
             db_api.BlockedUser().add(user_info.id, block_user_id)
 
 
-def show_all_player_profiles(user_message):
-    if not user_message['payload']['args'] or 'player_id' not in user_message['payload']['args']:
+def show_all_player_profiles(user):
+    if 'player_id' not in user.menu_args:
         return system.access_error()
-    profiles = db_api.RpProfile().get_user_profiles(user_message['payload']['args']['player_id'])
+    profiles = db_api.RpProfile().get_user_profiles(user.menu_args['player_id'])
     pr_buttons = list()
     if not profiles:
         message = 'Список анкет пуст'
@@ -391,8 +319,7 @@ def show_all_player_profiles(user_message):
                 'm_id': 'show_player_profile',
                 'args': {'profile_id': pr.id,
                          'btn_back': {'m_id': 'show_all_player_profiles',
-                                      'args': {'player_id': user_message['payload']['args']['player_id']}}}})])
+                                      'args': {'player_id': user.menu_args['player_id']}}}})])
 
-    user_menu = db_api.User().get_user(user_message['from_id']).menu_id
-    button_back = vk_api.new_button('Назад', {'m_id': user_menu}, 'primary')
+    button_back = vk_api.new_button('Назад', {'m_id': user.info.menu_id}, 'primary')
     return {'message': message, 'keyboard': pr_buttons + [[button_back]]}
