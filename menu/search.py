@@ -1,5 +1,5 @@
 import logging
-from bot_rp_finder.vk_api import vk_api
+from vk_api import vk_api
 from database import db_api
 from menu import system
 from menu import user_profile

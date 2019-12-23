@@ -165,7 +165,6 @@ class CheckButton:
     unique_option = False
     prew_func = staticmethod(change_profile)
     prew_menu = 'change_profile'
-    user_info = None
     table_class = None
     menu_prefix = ''
 
@@ -230,7 +229,7 @@ class CheckButton:
         return item_btn
 
     def change_list(self, user):
-        profile_id = self.user_info.item_id
+        profile_id = user.info.item_id
 
         user_item = self.table_class.get_list(profile_id)
         user_items_dict = {i.item.id: i for i in user_item}
@@ -292,7 +291,6 @@ class ChangeOptionalTagList(ProfileList):
 class ChangeProfileText(InputText):
     prew_func = staticmethod(change_profile)
     prew_menu = 'change_profile'
-    user_info = None
 
 
 class ChangeName(ChangeProfileText):
@@ -300,9 +298,9 @@ class ChangeName(ChangeProfileText):
     menu_prefix = 'profile_name_'
     message_to_user = 'Введите имя персонажа'
 
-    def update_db(self, text):
-        rp_profile = db_api.RpProfile().get_profile(self.user_info.item_id)
-        rp_profile.name = text
+    def update_db(self, user):
+        rp_profile = db_api.RpProfile().get_profile(user.info.item_id)
+        rp_profile.name = user.msg_text
         rp_profile.save()
 
 
@@ -311,9 +309,9 @@ class ChangeDescription(ChangeProfileText):
     menu_prefix = 'profile_description_'
     message_to_user = 'Введите описание персонажа'
 
-    def update_db(self, text):
-        rp_profile = db_api.RpProfile().get_profile(self.user_info.item_id)
-        rp_profile.description = text
+    def update_db(self, user):
+        rp_profile = db_api.RpProfile().get_profile(user.info.item_id)
+        rp_profile.description = user.msg_text
         rp_profile.save()
 
 
