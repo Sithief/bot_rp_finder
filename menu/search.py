@@ -1,12 +1,10 @@
-import time
-import json
 import logging
 from bot_rp_finder.vk_api import vk_api
-from bot_rp_finder.database import db_api
-from bot_rp_finder.menu import system
-from bot_rp_finder.menu import user_profile
-from bot_rp_finder.menu import text_extension as t_ext
-from bot_rp_finder.menu import notification
+from database import db_api
+from menu import system
+from menu import user_profile
+from menu import text_extension as t_ext
+from menu import notification
 
 
 def get_menus():

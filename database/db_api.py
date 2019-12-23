@@ -2,7 +2,7 @@ import peewee
 import logging
 import json
 import time
-from bot_rp_finder.vk_api.Keys import Keys
+from vk_api.Keys import Keys
 
 db_filename = Keys().get_db_filename()
 db = peewee.SqliteDatabase(db_filename, pragmas={'journal_mode': 'wal',

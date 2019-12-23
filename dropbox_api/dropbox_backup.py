@@ -3,7 +3,7 @@ import requests
 import json
 import logging
 import os
-from bot_rp_finder.vk_api.Keys import Keys
+from vk_api.Keys import Keys
 
 
 def upload_file(file_name):

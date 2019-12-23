@@ -1,7 +1,7 @@
 import json
 import logging
-from bot_rp_finder.vk_api import vk_api
-from bot_rp_finder.database import db_api
+from vk_api import vk_api
+from database import db_api
 
 
 def get_menus():

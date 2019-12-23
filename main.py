@@ -3,25 +3,14 @@ import queue
 import logging
 import traceback
 import sys
-try:
-    from bot_rp_finder.menu import menu, user_profile
-    from bot_rp_finder.menu.execute_time import Timer
-    from bot_rp_finder.vk_api import vk_api, longpoll, msg_send
-    from bot_rp_finder.vk_api.Keys import Keys
-    from bot_rp_finder.database import db_api
-    from bot_rp_finder.dropbox_api import dropbox_backup
-    from bot_rp_finder.menu import notification
-    from bot_rp_finder.menu.token import Token
-except:
-    sys.path.append('../')
-    from bot_rp_finder.menu import menu, user_profile
-    from bot_rp_finder.menu.execute_time import Timer
-    from bot_rp_finder.vk_api import vk_api, longpoll, msg_send
-    from bot_rp_finder.vk_api.Keys import Keys
-    from bot_rp_finder.database import db_api
-    from bot_rp_finder.dropbox_api import dropbox_backup
-    from bot_rp_finder.menu import notification
-    from bot_rp_finder.menu.token import Token
+from menu import menu, user_profile
+from menu.execute_time import Timer
+from vk_api import vk_api, longpoll, msg_send
+from vk_api.Keys import Keys
+from database import db_api
+from dropbox_api import dropbox_backup
+from menu import notification
+from menu.token import Token
 
 
 def init_logging():

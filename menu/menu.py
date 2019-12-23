@@ -1,6 +1,6 @@
-from bot_rp_finder.vk_api import vk_api
-from bot_rp_finder.database import db_api
-from bot_rp_finder.menu import system, admin, user_profile, search, notification
+from vk_api import vk_api
+from database import db_api
+from menu import system, admin, user_profile, search, notification
 
 
 def menu_hub(token):

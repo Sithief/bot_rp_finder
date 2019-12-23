@@ -1,7 +1,7 @@
 import logging
-from bot_rp_finder.vk_api import vk_api
-from bot_rp_finder.database import db_api
-from bot_rp_finder.menu import system
+from vk_api import vk_api
+from database import db_api
+from menu import system
 
 
 def get_menus():

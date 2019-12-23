@@ -1,7 +1,7 @@
 import logging
 import threading
-from bot_rp_finder.vk_api import vk_api
-from bot_rp_finder.vk_api.Keys import Keys
+from vk_api import vk_api
+from vk_api.Keys import Keys
 
 
 def send(stdin):

@@ -1,4 +1,4 @@
-from bot_rp_finder.database import db_api
+from database import db_api
 
 
 class Token:
