@@ -339,7 +339,8 @@ def save_images(user):
         return {'message': message, 'keyboard': [[button_return, button_try_again]]}
 
     message = 'Сохранить эти изображения?'
-    button_yes = vk_api.new_button('Да, всё верно', {'m_id': 'change_profile', 'args': 'update_images'}, 'positive')
+    button_yes = vk_api.new_button('Да, всё верно', {'m_id': 'change_profile',
+                                                     'args': {'update_images': True}}, 'positive')
     button_no = vk_api.new_button('Нет, загрузить другие', {'m_id': 'change_images', 'args': None}, 'negative')
     return {'message': message, 'keyboard': [[button_yes], [button_no]], 'attachment': images}
 

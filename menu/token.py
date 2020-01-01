@@ -19,7 +19,8 @@ class Token:
         self.info = user
         if message.get('payload', None) and message['payload'].get('m_id', None):
             self.menu_id = message['payload']['m_id']
-            if message['payload'].get('args', None):
+            if message['payload'].get('args', None) \
+                    and type(message['payload']['args']):
                 self.menu_args = message['payload']['args']
             else:
                 self.menu_args = dict()
