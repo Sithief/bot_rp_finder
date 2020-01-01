@@ -151,9 +151,9 @@ class ChangeName(user_profile.InputText):
     menu_prefix = 'preset_name_'
     message_to_user = 'Введите название пресета'
 
-    def update_db(self, text):
-        rp_profile = db_api.RpProfile().get_profile(self.user_info.item_id)
-        rp_profile.name = text
+    def update_db(self, user):
+        rp_profile = db_api.RpProfile().get_profile(user.info.item_id)
+        rp_profile.name = user.msg_text
         rp_profile.save()
 
 
