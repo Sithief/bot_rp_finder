@@ -141,7 +141,6 @@ class RoleOffer(peewee.Model):
         try:
             from_user_id = RpProfile().get_profile(from_profile_id)
             if from_user_id:
-                from_user_id.owner_id
                 user_offers = self.get((self._schema.model.from_owner_id == from_user_id) &
                                        (self._schema.model.to_owner_id == to_user_id))
                 return user_offers
@@ -320,6 +319,57 @@ class ProfileOptionalTagList(ProfileAdditionalField):
     item = peewee.ForeignKeyField(additional_field, on_delete='cascade')
 
 
+class UserPath(peewee.Model):
+    user = peewee.ForeignKeyField(User, on_delete='cascade')
+    time = peewee.FloatField()
+    menu_id = peewee.CharField()
+    menu_args = peewee.CharField()
+
+    class Meta:
+        database = db
+
+    def add(self, user_id, create_time):
+        try:
+            user = User.get(User.id == user_id)
+            added_item = self.create(user=user, time=create_time)
+            return added_item
+        except Exception as error_msg:
+            logging.error(error_msg)
+            return False
+
+    def get_list(self, user_id):
+        try:
+            item_list = self.select().join(User).where(self._schema.model.user_id == user_id)
+            return item_list
+        except self.DoesNotExist:
+            return []
+
+    def delete_from_list(self, user_id, blocked_id):
+        try:
+            delete_item = self.delete().where((self._schema.model.user_id == user_id) &
+                                              (self._schema.model.blocked_id == blocked_id))
+            delete_item.execute()
+            return True
+        except self.DoesNotExist:
+            return False
+
+    def delete_by_time(self, start_time):
+        try:
+            delete_item = self.delete().where((self._schema.model.time < start_time))
+            delete_item.execute()
+            return True
+        except self.DoesNotExist:
+            return False
+
+    def delete_by_path_id(self, path_id):
+        try:
+            delete_item = self.delete().where((self._schema.model.id == path_id))
+            delete_item.execute()
+            return True
+        except self.DoesNotExist:
+            return False
+
+
 class AvailableActions(peewee.Model):
     user_id = peewee.IntegerField(primary_key=True)
     actions = peewee.CharField()
@@ -478,6 +528,7 @@ def init_db():
     OptionalTag.create_table()
     ProfileOptionalTagList.create_table()
     BlockedUser.create_table()
+    UserPath.create_table()
 
 
 def update_admins(admin_list):

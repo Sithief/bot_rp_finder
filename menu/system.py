@@ -1,12 +1,15 @@
 import json
 import logging
+import time
+from menu import menu
 from vk_api import vk_api
 from database import db_api
 
 
 def get_menus():
     menus = {
-        'confirm_action': confirm_action
+        'confirm_action': confirm_action,
+        # 'previous_menu': previous_menu
     }
     return menus
 
@@ -195,3 +198,17 @@ class ItemMenu:
             message = f'Во время удаления произошла ошибка, попробуйте повторить запрос через некоторое время.'
         button_return = vk_api.new_button('Назад', {'m_id': self.prew_menu, 'args': None}, 'primary')
         return {'message': message, 'keyboard': [[button_return]]}
+
+
+# def add_current_menu(user):
+#     last_user_path = db_api.UserPath().add(user_id=user.info.id, t)
+#
+#
+# def previous_menu(user):
+#     return menu.main(user)
+#
+#
+# def navigation_buttons():
+#     button_home = vk_api.new_button('Главное меню', {'m_id': 'main'}, 'primary')
+#     button_back = vk_api.new_button('Назад', {'m_id': 'previous_menu'}, 'primary')
+#     return [button_home, button_back]

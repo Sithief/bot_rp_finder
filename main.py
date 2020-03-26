@@ -95,10 +95,13 @@ if __name__ == '__main__':
             user_token = Token(msg)
             if not user_token.info:
                 vk_user_info = bot_api.get_user_info(msg['from_id'])
-                user_info = db_api.User().create_user(user_id=vk_user_info['id'],
-                                                      name=vk_user_info['first_name'],
-                                                      is_fem=vk_user_info['sex'] % 2)
-                user_token.update_user_info(user_info, msg)
+                try:
+                    user_info = db_api.User().create_user(user_id=vk_user_info['id'],
+                                                          name=vk_user_info['first_name'],
+                                                          is_fem=vk_user_info['sex'] % 2)
+                    user_token.update_user_info(user_info, msg)
+                except:
+                    continue
 
             timer.start(user_token.menu_id)
             bot_message = menu.menu_hub(user_token)

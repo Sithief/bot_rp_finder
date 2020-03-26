@@ -76,7 +76,7 @@ def change_profile(user):
     if not profile:
         return system.access_error()
 
-    if user.menu_args.get('link', None):
+    if user.menu_args.get('link', None) in (True, False):
         profile.show_link = user.menu_args['link']
 
     profile.create_date = int(time.time())

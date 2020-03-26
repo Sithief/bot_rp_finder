@@ -56,8 +56,8 @@ def choose_preset_to_search(user):
     else:
         button_create_preset = vk_api.new_button('создать новый пресет', {'m_id': 'choose_preset_to_search'})
 
-    button_main = vk_api.new_button('Главное меню', {'m_id': 'main', 'args': None}, 'primary')
-    return {'message': message, 'keyboard': pr_buttons + [[button_create_preset], [button_main]]}
+    # button_main = vk_api.new_button('Главное меню', {'m_id': 'main', 'args': None}, 'primary')
+    return {'message': message, 'keyboard': pr_buttons + [[button_create_preset]]}
 
 
 def create_preset(user):
@@ -84,6 +84,8 @@ def delete_preset(user):
 def change_preset(user):
     if 'item_id' in user.menu_args:
         user.info.item_id = user.menu_args['item_id']
+    else:
+        return system.access_error()
     message = system.rp_profile_display(user.info.item_id)
 
     user.info.menu_id = 'change_preset'
@@ -91,7 +93,10 @@ def change_preset(user):
 
     message['message'] = 'Пресет для поиска:\n\n' + message['message']
     button_main = vk_api.new_button('Назад', {'m_id': 'choose_preset_to_search'}, 'primary')
-    buttons_change_name = vk_api.new_button('Название', {'m_id': ChangeName().menu_names['change']})
+    buttons_change_name = vk_api.new_button('Название', {
+        'm_id': ChangeName().menu_names['change'],
+        'args': {'profile_id': user.menu_args['item_id']}
+    })
     buttons_change_gender = vk_api.new_button('Пол', {'m_id': ChangeGenderList().menu_names['change']})
     buttons_change_setting = vk_api.new_button('Сеттинг', {'m_id': ChangeSettingList().menu_names['change']})
     buttons_change_rp_rating = vk_api.new_button('Рейтинг', {'m_id': ChangeRpRatingList().menu_names['change']})
@@ -100,11 +105,11 @@ def change_preset(user):
     buttons_delete = vk_api.new_button('Удалить пресет',
                                        {'m_id': 'confirm_action',
                                         'args': {'m_id': 'delete_preset',
-                                                 'args': {'profile_id': user.info.item_id}}},
+                                                 'args': {'profile_id': user.menu_args['item_id']}}},
                                        'negative')
     button_search = vk_api.new_button('Искать по пресету', {'m_id': 'search_by_preset'}, 'positive')
     return {'message': message['message'],
-            'attachment': message['attachment'],
+            'attachment': message.get('attachment', []),
             'keyboard': [[buttons_change_name],
                          [buttons_change_gender, buttons_change_species],
                          [buttons_change_setting, buttons_change_optional_tag, buttons_change_rp_rating],
