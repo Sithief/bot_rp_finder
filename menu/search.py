@@ -64,7 +64,7 @@ def create_preset(user):
     search_preset = db_api.RpProfile().create_profile(user.info.id, search_preset=True)
     user.info.item_id = search_preset.id
     user.info.save()
-    return change_preset(user)
+    return change_preset(user, new_preset=True)
 
 
 def delete_preset(user):
@@ -81,10 +81,10 @@ def delete_preset(user):
     return {'message': message, 'keyboard': [[button_return]]}
 
 
-def change_preset(user):
+def change_preset(user, new_preset=False):
     if 'item_id' in user.menu_args:
         user.info.item_id = user.menu_args['item_id']
-    else:
+    elif not new_preset:
         return system.access_error()
     message = system.rp_profile_display(user.info.item_id)
 
@@ -95,7 +95,7 @@ def change_preset(user):
     button_main = vk_api.new_button('Назад', {'m_id': 'choose_preset_to_search'}, 'primary')
     buttons_change_name = vk_api.new_button('Название', {
         'm_id': ChangeName().menu_names['change'],
-        'args': {'profile_id': user.menu_args['item_id']}
+        'args': {'profile_id': user.info.item_id}
     })
     buttons_change_gender = vk_api.new_button('Пол', {'m_id': ChangeGenderList().menu_names['change']})
     buttons_change_setting = vk_api.new_button('Сеттинг', {'m_id': ChangeSettingList().menu_names['change']})
@@ -105,7 +105,7 @@ def change_preset(user):
     buttons_delete = vk_api.new_button('Удалить пресет',
                                        {'m_id': 'confirm_action',
                                         'args': {'m_id': 'delete_preset',
-                                                 'args': {'profile_id': user.menu_args['item_id']}}},
+                                                 'args': {'profile_id': user.info.item_id}}},
                                        'negative')
     button_search = vk_api.new_button('Искать по пресету', {'m_id': 'search_by_preset'}, 'positive')
     return {'message': message['message'],
