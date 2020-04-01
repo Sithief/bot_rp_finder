@@ -56,8 +56,8 @@ def choose_preset_to_search(user):
     else:
         button_create_preset = vk_api.new_button('создать новый пресет', {'m_id': 'choose_preset_to_search'})
 
-    # button_main = vk_api.new_button('Главное меню', {'m_id': 'main', 'args': None}, 'primary')
-    return {'message': message, 'keyboard': pr_buttons + [[button_create_preset]]}
+    button_main = vk_api.new_button('Главное меню', {'m_id': 'main', 'args': None}, 'primary')
+    return {'message': message, 'keyboard': pr_buttons + [[button_create_preset], [button_main]]}
 
 
 def create_preset(user):
