@@ -3,6 +3,7 @@ import queue
 import logging
 import traceback
 import sys
+import os
 from flask import Flask, request
 import configparser
 from menu import menu, user_profile
@@ -19,12 +20,15 @@ app = Flask(__name__)
 
 
 def init_logging():
+    log_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'log')
+    if not os.path.exists(log_path):
+        os.makedirs(log_path)
     logging.basicConfig(
         format='%(filename)-25s[LINE:%(lineno)d]# %(levelname)-8s [%(asctime)s]  %(message)s',
         # level=logging.INFO,
         level=logging.DEBUG,
         datefmt='%m-%d %H:%M',
-        filename='log/bot.log',
+        filename=os.path.join(log_path, 'bot.log'),
         filemode='w'
     )
     console = logging.StreamHandler()
@@ -39,7 +43,10 @@ def foo(exctype, value, tb):
     import time
     init_logging()
     logging.critical(f'EXCEPTION: Type: {exctype}, Value: {value}')
-    with open('log/bot_errors.log', 'w') as error_file:
+    log_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'log')
+    if not os.path.exists(log_path):
+        os.makedirs(log_path)
+    with open(os.path.join(log_path, 'bot_errors.log'), 'w') as error_file:
         error_file.write(time.asctime() + '\n')
         traceback.print_exception(exctype, value, tb, file=error_file)
 
