@@ -10,7 +10,7 @@ class Keys:
         'bot_data_dir': os.path.dirname(os.path.abspath(__file__))
     }
 
-    def __init__(self, file_with_path='path.txt'):
+    def __init__(self, file_with_path=os.path.join(os.path.dirname(os.path.abspath(__file__)), 'path.txt')):
         if not os.path.exists(file_with_path):
             logging.info(f'Файл с путём до дополнительных файлов "path.txt" не найден и будет создан в директории бота')
             json_keys = json.dumps({'keys_filename': self.default['keys_filename'],
