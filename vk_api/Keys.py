@@ -7,7 +7,7 @@ class Keys:
     default = {
         'keys_filename': 'keys.txt',
         'db_filename': 'bot_data.db',
-        'bot_data_dir': '../bot_data'
+        'bot_data_dir': os.path.dirname(os.path.abspath(__file__))
     }
 
     def __init__(self, file_with_path='path.txt'):

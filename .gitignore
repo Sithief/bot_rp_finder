@@ -11,3 +11,4 @@ tests.py
 *.db
 keys.txt
 keys_private.txt
+*.inf
