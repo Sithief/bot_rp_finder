@@ -1,6 +1,4 @@
-import json
 from database import db_api
-
 
 
 class Token:
@@ -19,8 +17,7 @@ class Token:
 
     def update_user_info(self, user, message):
         self.info = user
-        message['payload'] = json.loads(message.get('payload', '{}'))
-        if message['payload'].get('m_id', None):
+        if message.get('payload', None) and message['payload'].get('m_id', None):
             self.menu_id = message['payload']['m_id']
             if message['payload'].get('args', None) \
                     and type(message['payload']['args']):
