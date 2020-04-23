@@ -146,17 +146,15 @@ class InputText:
         user.info.menu_id = self.menu_names['save']
         user.info.save()
         message = self.message_to_user
-        button_return = vk_api.new_button('Назад', {'m_id': self.prew_menu, 'item_id': user.info.item_id}, 'negative')
+        button_return = vk_api.new_button('Назад', {'m_id': self.prew_menu}, 'negative')
         return {'message': message, 'keyboard': [[button_return]]}
 
     def save(self, user):
         check_function = self.check_function
         error_message = check_function(user.msg_text)
         if error_message:
-            button_return = vk_api.new_button('Назад', {'m_id': self.prew_menu,
-                                                        'item_id': user.info.item_id}, 'negative')
-            button_try_again = vk_api.new_button('Ввести снова', {'m_id':  self.menu_names['change'],
-                                                                  'item_id': user.info.item_id}, 'positive')
+            button_return = vk_api.new_button('Назад', {'m_id': self.prew_menu}, 'negative')
+            button_try_again = vk_api.new_button('Ввести снова', {'m_id':  self.menu_names['change']}, 'positive')
             return {'message': error_message, 'keyboard': [[button_return, button_try_again]]}
 
         self.update_db(user)
