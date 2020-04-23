@@ -7,7 +7,7 @@ class Keys:
     default = {
         'keys_filename': 'keys.txt',
         'db_filename': 'bot_data.db',
-        'bot_data_dir': os.path.dirname(os.path.abspath(__file__))
+        'bot_data_dir': os.path.join(*os.path.split(os.path.abspath(__file__))[:-1], 'bot_data')
     }
 
     def __init__(self, file_with_path=os.path.join(os.path.dirname(os.path.abspath(__file__)), 'path.txt')):
@@ -26,7 +26,6 @@ class Keys:
             keys_filename = keys.get('keys_filename', self.default['keys_filename'])
             db_filename = keys.get('db_filename', self.default['db_filename'])
             bot_data_dir = keys.get('bot_data_dir', self.default['bot_data_dir'])
-
         except Exception as e:
             logging.error(str(e))
             keys_filename = self.default['keys_filename']

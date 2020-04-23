@@ -71,12 +71,13 @@ def init_messages_send_threads(count):
 
 
 def init():
+    global events
+    events = list()
     import os
     current_path = os.path.dirname(os.path.abspath(__file__))
     global CONF
     CONF = configparser.ConfigParser()
-    CONF.read(os.path.join(current_path, 'bot_settings.inf'),
-              encoding='utf-8')
+    CONF.read(os.path.join(current_path, 'bot_settings.inf'), encoding='utf-8')
     init_logging()
     sys.excepthook = foo
     dropbox_backup.backup_db()
@@ -85,7 +86,7 @@ def init():
         db_api.update_db()
 
     global bot_api
-    bot_api = vk_api.Api(Keys().get_group_token(), 'main')
+    bot_api = vk_api.Api(CONF.get('VK', 'token', fallback='no confirm'), 'main')
     if not bot_api.valid:
         logging.error('Токен для VK API не подходит')
         exit(1)
@@ -120,7 +121,7 @@ def message_processing(msg):
             user_profile.update_images(message)
     else:
         bot_api.msg_send(peer_id=msg['peer_id'], payload=bot_message)
-
+    notification.send_unread_notifications(bot_api)
     # if new_messages:
     #     timer.time_stamp('total')
     #     changes_count += 1
@@ -147,17 +148,21 @@ def vk_callback():
         return confirm
 
     elif content.get('type') == 'message_new':
-        # print(content)
-        message_processing(content['object']['message'])
-        # requests.get()
-        # new_message = request_json.get('object').get('message')
-        # asyncio.create_task(vk_analyze(new_message))
+        global events
+        if content['event_id'] in events:
+            return 'Ok'
+        events = [content['event_id']] + events[:1000]
+        try:
+            message_processing(content['object']['message'])
+        except:
+            pass
     return 'Ok'
 
 
 @app.route("/")
 def index():
-    return "ok"
+    global events
+    return "events:" + ',\n'.join(events)
 
 
 if __name__ == '__main__':
