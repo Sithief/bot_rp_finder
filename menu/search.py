@@ -84,6 +84,8 @@ def delete_preset(user):
 def change_preset(user):
     if 'item_id' in user.menu_args:
         user.info.item_id = user.menu_args['item_id']
+    else:
+        user.menu_args['item_id'] = user.info.item_id
     # else:
     #     return system.access_error()
     message = system.rp_profile_display(user.info.item_id)

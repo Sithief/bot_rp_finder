@@ -152,10 +152,7 @@ def vk_callback():
         if content['event_id'] in events:
             return 'Ok'
         events = [content['event_id']] + events[:1000]
-        try:
-            message_processing(content['object']['message'])
-        except:
-            pass
+        message_processing(content['object']['message'])
     return 'Ok'
 
 
