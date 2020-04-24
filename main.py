@@ -4,6 +4,7 @@ import logging
 import traceback
 import sys
 import os
+import time
 from flask import Flask, request
 import configparser
 from menu import menu, user_profile
@@ -71,6 +72,10 @@ def init_messages_send_threads(count):
 
 
 def init():
+    global uptime
+    uptime = time.time()
+    global timers
+    timers = list()
     global events
     events = list()
     import os
@@ -141,6 +146,7 @@ def message_processing(msg):
 
 @app.route('/vk_callback/', methods=['POST'])
 def vk_callback():
+    t_start = time.time()
     content = request.get_json(force=True)
     print('content', content)
     if content.get('type') == 'confirmation':
@@ -153,13 +159,24 @@ def vk_callback():
             return 'Ok'
         events = [content['event_id']] + events[:1000]
         message_processing(content['object']['message'])
+        global timers
+        timers = [time.time() - t_start] + timers[:10000]
     return 'Ok'
 
 
 @app.route("/")
 def index():
-    global events
-    return "events:" + ',\n'.join(events)
+    uptime_days = int(time.time() - uptime) // (24 * 60 * 60)
+    uptime_time = time.strftime('%X', time.gmtime(time.time() - uptime))
+    if timers:
+        msg_time = f"msg time: " \
+           f"5: {round(sum(timers[:5])/len(timers[:5]), 3)}s. " \
+           f"25: {round(sum(timers[:25])/len(timers[:25]), 3)}s. " \
+           f"100: {round(sum(timers[:100])/len(timers[:100]), 3)}s. "
+    else:
+        msg_time = ''
+    return f"uptime: {uptime_days} days and {uptime_time} \n" + msg_time
+
 
 
 if __name__ == '__main__':
