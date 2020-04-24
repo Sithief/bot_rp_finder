@@ -2,7 +2,14 @@ import json
 import os
 import logging
 
-home_dir = os.sep + os.path.join(*os.path.abspath(__file__).split(os.sep)[:-3])
+
+def p_split(x, steps):
+    for _ in range(steps):
+        x, f = os.path.split(x)
+    return x
+
+
+home_dir = p_split(os.path.abspath(__file__), 3)
 
 
 class Keys:
@@ -84,7 +91,8 @@ class Keys:
 
 
 if __name__ == "__main__":
-    print(Keys().default)
+    # print('home_dir', home_dir)
+    # print(Keys().default)
     print(Keys().get_db_filename())
     # print(home_dir, os.path.isabs(home_dir))
     # print(Keys().default['bot_data_dir'], os.path.isabs(Keys().default['bot_data_dir']))

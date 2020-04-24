@@ -144,7 +144,8 @@ return admins.items;
         #     return False
         # items = last_message['response']['items']
         # if items and time.time() - items[0]['date'] > 10 * 60:
-        return self.msg_send(peer_id, payload)
+        self.msg_send(peer_id, payload)
+        return True
 
 
 class UserApi(object):
