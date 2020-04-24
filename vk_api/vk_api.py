@@ -143,7 +143,7 @@ return admins.items;
             logging.error(last_message)
             return False
         items = last_message['response']['items']
-        if items and time.time() - items[0]['date'] > 60 * 60:
+        if items and time.time() - items[0]['date'] > 10 * 60:
             return self.msg_send(peer_id, payload)
 
 

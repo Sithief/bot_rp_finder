@@ -2,12 +2,14 @@ import json
 import os
 import logging
 
+home_dir = os.sep + os.path.join(*os.path.abspath(__file__).split(os.sep)[:-3])
+
 
 class Keys:
     default = {
         'keys_filename': 'keys.txt',
         'db_filename': 'bot_data.db',
-        'bot_data_dir': os.path.join(*os.path.split(os.path.abspath(__file__))[:-1], 'bot_data')
+        'bot_data_dir': os.path.join(home_dir, 'bot_data')
     }
 
     def __init__(self, file_with_path=os.path.join(os.path.dirname(os.path.abspath(__file__)), 'path.txt')):
@@ -32,10 +34,10 @@ class Keys:
             db_filename = self.default['db_filename']
             bot_data_dir = self.default['bot_data_dir']
 
-        data_path = os.path.expanduser(bot_data_dir)
+        data_path = bot_data_dir
         if not os.path.exists(data_path):
             logging.info(f'Директрия {data_path} не обнаружена и будет создана')
-            os.mkdir(data_path)
+            os.makedirs(data_path)
 
         self.__db_filename = os.path.join(os.path.realpath(data_path), db_filename)
         self.__keys_filename = os.path.join(data_path, keys_filename)
@@ -79,3 +81,10 @@ class Keys:
 
     def get_db_filename(self):
         return self.__db_filename
+
+
+if __name__ == "__main__":
+    print(Keys().default)
+    print(Keys().get_db_filename())
+    # print(home_dir, os.path.isabs(home_dir))
+    # print(Keys().default['bot_data_dir'], os.path.isabs(Keys().default['bot_data_dir']))
