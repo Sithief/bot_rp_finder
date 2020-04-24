@@ -169,14 +169,13 @@ def index():
     uptime_days = int(time.time() - uptime) // (24 * 60 * 60)
     uptime_time = time.strftime('%X', time.gmtime(time.time() - uptime))
     if timers:
-        msg_time = f"msg time: " \
+        msg_time = f"msg: {len(timers)} msg time: " \
            f"5: {round(sum(timers[:5])/len(timers[:5]), 3)}s. " \
            f"25: {round(sum(timers[:25])/len(timers[:25]), 3)}s. " \
            f"100: {round(sum(timers[:100])/len(timers[:100]), 3)}s. "
     else:
         msg_time = ''
     return f"uptime: {uptime_days} days and {uptime_time} \n" + msg_time
-
 
 
 if __name__ == '__main__':
