@@ -21,17 +21,17 @@ app = Flask(__name__)
 
 
 def init_logging():
-    log_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'log')
-    if not os.path.exists(log_path):
-        os.makedirs(log_path)
-    logging.basicConfig(
-        format='%(filename)-25s[LINE:%(lineno)d]# %(levelname)-8s [%(asctime)s]  %(message)s',
-        # level=logging.INFO,
-        level=logging.DEBUG,
-        datefmt='%m-%d %H:%M',
-        filename=os.path.join(log_path, 'bot.log'),
-        filemode='w'
-    )
+    # log_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'log')
+    # if not os.path.exists(log_path):
+    #     os.makedirs(log_path)
+    # logging.basicConfig(
+    #     format='%(filename)-25s[LINE:%(lineno)d]# %(levelname)-8s [%(asctime)s]  %(message)s',
+    #     # level=logging.INFO,
+    #     level=logging.DEBUG,
+    #     datefmt='%m-%d %H:%M',
+    #     filename=os.path.join(log_path, 'bot.log'),
+    #     filemode='w'
+    # )
     console = logging.StreamHandler()
     console.setLevel(logging.INFO)
     formatter = logging.Formatter('%(name)-12s: %(levelname)-8s %(message)s')
