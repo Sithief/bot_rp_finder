@@ -24,6 +24,7 @@ app = Flask(__name__)
 def init_logging():
     log_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'log')
     if not os.path.exists(log_path):
+        os.makedirs(log_path)
     logging.basicConfig(
         handlers=[RotatingFileHandler(os.path.join(log_path, 'my_log.log'), maxBytes=100000, backupCount=10)],
         format='%(filename)-25s[LINE:%(lineno)d]# %(levelname)-8s [%(asctime)s]  %(message)s',
