@@ -13,8 +13,7 @@ def upload_file(file_name):
             update_time = time.localtime(time.time())
             url = "https://content.dropboxapi.com/2/files/upload"
             dropbox_arg = {
-                'path': f'/bot_rp_finder/%02d.%02d.%02d_{Keys().get_group_id()}_{os.path.basename(file_name)}' %
-                        (update_time.tm_mday, update_time.tm_mon, update_time.tm_year % 100),
+                'path': f'/bot_rp_finder/{update_time.tm_mday}_{Keys().get_group_id()}_{os.path.basename(file_name)}',
                 'mode': {'.tag': 'overwrite'}
             }
             headers = {
@@ -30,3 +29,7 @@ def upload_file(file_name):
 
 def backup_db():
     upload_file(Keys().get_db_filename())
+
+
+if __name__ == "__main__":
+    backup_db()
