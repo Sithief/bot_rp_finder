@@ -147,6 +147,24 @@ return admins.items;
         self.msg_send(peer_id, payload)
         return True
 
+    def unanswered(self):
+        logging.info(f'unread messages check')
+        # message_text = 'Модуль приёма сообщений был перезагружен. Будет учтена только последняя команда.'
+        unread_msg = self.request_get('messages.getConversations', {'filter': 'unanswered', 'count': 200})
+        try:
+            unread_msg = [i['last_message'] for i in unread_msg['response']['items']]
+            for msg in unread_msg:
+                if 'payload' in msg:
+                    msg['payload'] = json.loads(msg['payload'])
+                # sended_message = self.msg_send(msg['peer_id'], {'message': message_text})
+                # if not sended_message:
+                #     logging.warning(f'unread messages send {sended_message}')
+            return unread_msg
+
+        except Exception as error_msg:
+            logging.error(f'unread_msg: {unread_msg} error: {error_msg}')
+            return []
+
 
 class UserApi(object):
     def __init__(self, access_token, group_id, last_reques_time, name='name', version='5.92'):

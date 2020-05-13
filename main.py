@@ -28,11 +28,8 @@ def init_logging():
     logging.basicConfig(
         handlers=[RotatingFileHandler(os.path.join(log_path, 'my_log.log'), maxBytes=100000, backupCount=10)],
         format='%(filename)-25s[LINE:%(lineno)d]# %(levelname)-8s [%(asctime)s]  %(message)s',
-        # level=logging.INFO,
         level=logging.DEBUG,
         datefmt='%m-%d %H:%M',
-        # filename=os.path.join(log_path, 'bot.log'),
-        # filemode='w'
     )
     # console = logging.StreamHandler()
     # console.setLevel(logging.INFO)
@@ -87,7 +84,6 @@ def init():
     CONF.read(os.path.join(current_path, 'bot_settings.inf'), encoding='utf-8')
     init_logging()
     sys.excepthook = foo
-    dropbox_backup.backup_db()
 
     if 'update_db' in sys.argv:
         db_api.update_db()
@@ -97,6 +93,9 @@ def init():
     if not bot_api.valid:
         logging.error('Токен для VK API не подходит')
         exit(1)
+
+    for msg in bot_api.unanswered():
+        message_processing(msg)
 
     admin_list = bot_api.get_admins()
     db_api.init_db()
