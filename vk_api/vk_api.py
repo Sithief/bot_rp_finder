@@ -153,12 +153,12 @@ return admins.items;
         unread_msg = self.request_get('messages.getConversations', {'filter': 'unanswered', 'count': 200})
         try:
             unread_msg = [i['last_message'] for i in unread_msg['response']['items']]
-            for msg in unread_msg:
-                if 'payload' in msg:
-                    msg['payload'] = json.loads(msg['payload'])
-                # sended_message = self.msg_send(msg['peer_id'], {'message': message_text})
-                # if not sended_message:
-                #     logging.warning(f'unread messages send {sended_message}')
+            # for msg in unread_msg:
+            #     if 'payload' in msg:
+            #         msg['payload'] = json.loads(msg['payload'])
+            #     sended_message = self.msg_send(msg['peer_id'], {'message': message_text})
+            #     if not sended_message:
+            #         logging.warning(f'unread messages send {sended_message}')
             return unread_msg
 
         except Exception as error_msg:
