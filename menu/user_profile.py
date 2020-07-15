@@ -2,8 +2,10 @@ import json
 import logging
 import time
 from vk_api import vk_api
+from menu.token import Token
 from database import db_api
 from menu import system
+from bot_rp_finder.__init__ import *
 
 # создание и изменение анкет
 
@@ -318,7 +320,7 @@ class ChangeDescription(ChangeProfileText):
 def change_images(user):
     user.info.menu_id = 'save_images'
     user.info.save()
-    message = 'Отправьте до 7 изображений для анкеты.\n' \
+    message = 'Отправьте до 10 изображений для анкеты.\n' \
               'Лучше всего использовать изображения, на которых хорошо видна внешность персонажа, ' \
               'его характер и подходящая для него обстановка.'
     button_return = vk_api.new_button('Вернуться к анкете',
@@ -327,22 +329,39 @@ def change_images(user):
 
 
 def save_images(user):
+    sizes_table = {'w': 2560, 'z': 1080, 'y': 807, 'x': 604}
     images_attachments = [i['photo'] for i in user.msg_attach if i['type'] == 'photo']
-    images = [f"photo{i['owner_id']}_{i['id']}_{i.get('access_key', '')}" for i in images_attachments]
+    # images = [f"photo{i['owner_id']}_{i['id']}_{i.get('access_key', '')}" for i in images_attachments]
+    img_urls = list()
+    for img in images_attachments:
+        image = max(img['sizes'], key=lambda x: sizes_table.get(x['type'], 0))
+        if image['type'] in sizes_table:
+            img_urls.append(image['url'])
 
-    button_return = vk_api.new_button('Вернуться к анкете',
-                                      {'m_id': 'change_profile', 'args': None}, 'negative')
-    button_try_again = vk_api.new_button('Отправить снова',
-                                         {'m_id': 'change_images', 'args': None}, 'positive')
-    if len(images) == 0:
+    if len(img_urls) == 0:
+        button_return = vk_api.new_button('Вернуться к анкете',
+                                          {'m_id': 'change_profile', 'args': None}, 'negative')
+        button_try_again = vk_api.new_button('Отправить снова',
+                                             {'m_id': 'change_images', 'args': None}, 'positive')
         message = f'Это не слишком похоже на подходящие для анкеты изображения. Попробуйте загрузить заново.'
         return {'message': message, 'keyboard': [[button_return, button_try_again]]}
 
-    message = 'Сохранить эти изображения?'
-    button_yes = vk_api.new_button('Да, всё верно', {'m_id': 'change_profile',
-                                                     'args': {'update_images': True}}, 'positive')
-    button_no = vk_api.new_button('Нет, загрузить другие', {'m_id': 'change_images', 'args': None}, 'negative')
-    return {'message': message, 'keyboard': [[button_yes], [button_no]], 'attachment': images}
+    images = list()
+    for url in img_urls:
+        img = bot_api.upload_image(url)
+        if img:
+            images.append(img)
+
+    user_info = db_api.User().get_user(user.info.id)
+    if user_info:
+        rp_profile = db_api.RpProfile().get_profile(user_info.item_id)
+        if rp_profile:
+            rp_profile.arts = json.dumps(images, ensure_ascii=False)
+            rp_profile.save()
+    message = 'Эти изображения сохранены'
+    button_yes = vk_api.new_button('вернуться к анкете',
+                                   {'m_id': 'change_profile', 'args': None}, 'positive')
+    return {'message': message, 'keyboard': [[button_yes]], 'attachment': images}
 
 
 def update_images(message):

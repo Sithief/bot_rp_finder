@@ -2,7 +2,7 @@ import peewee
 import logging
 import json
 import time
-from vk_api.Keys import Keys
+from bot_rp_finder.vk_api.Keys import Keys
 
 db_filename = Keys().get_db_filename()
 db = peewee.SqliteDatabase(db_filename, pragmas={'journal_mode': 'wal',
@@ -563,6 +563,172 @@ def update_db():
     #         )
 
 
+def count_similarity_score(user_parameter_list, parameter, player_profile):
+    score = 0
+    player_parameter_list = parameter().get_list(player_profile.id)
+
+    user_allowed_parameter = set(i.item for i in user_parameter_list if i.is_allowed)
+    player_allowed_parameter = set(i.item for i in player_parameter_list if i.is_allowed)
+    user_not_allowed_parameter = set(i.item for i in user_parameter_list if not i.is_allowed)
+    player_not_allowed_parameter = set(i.item for i in player_parameter_list if not i.is_allowed)
+
+    score += len(user_allowed_parameter & player_allowed_parameter)
+    score += len(user_not_allowed_parameter & player_not_allowed_parameter)
+
+    score -= len(user_allowed_parameter & player_not_allowed_parameter)
+    score -= len(user_not_allowed_parameter & player_allowed_parameter)
+
+    return score
+
+
+def old_suit_by_parameter(profile_id, parameter, user_profiles):
+    try:
+        not_allowed_items = parameter.select(parameter.item_id).distinct() \
+            .where((parameter.profile_id == profile_id) & ~parameter.is_allowed)
+
+        additional_field = parameter.additional_field
+        not_search_list = additional_field.select(additional_field.id)\
+            .where(additional_field.id.in_(not_allowed_items))
+
+        unsuit_profiles = parameter.select(parameter.profile_id)\
+            .where(parameter.item_id.in_(not_search_list) & parameter.is_allowed)
+
+        allowed_items = parameter.select(parameter.item_id)\
+            .where((parameter.profile == profile_id) & parameter.is_allowed)
+
+        search_list = parameter.additional_field.select(parameter.additional_field.id)\
+            .where(parameter.additional_field.id.in_(allowed_items))
+
+        suit_profiles = parameter.select()\
+            .join(parameter.profile_field, on=(parameter.profile == parameter.profile_field.id))\
+            .where(parameter.item_id.in_(search_list) &
+                   parameter.is_allowed &
+                   ~parameter.profile_field.search_preset &
+                   parameter.profile_id.not_in(user_profiles) &
+                   parameter.profile_id.not_in(unsuit_profiles)).group_by(parameter.profile_id)
+
+        return suit_profiles
+    except parameter.DoesNotExist:
+        return []
+
+
+def old_find_suitable_profiles(profile_id, count, offset, need_sort=True):
+    import time
+    timer = {'start': time.time()}
+    user_id = RpProfile().get_profile(profile_id).owner_id
+    user_profiles = RpProfile().get_user_profiles(user_id)
+
+    timer['user_profiles'] = time.time()
+    suit_by_gender = old_suit_by_parameter(profile_id, ProfileGenderList, user_profiles)
+    suit_by_setting = old_suit_by_parameter(profile_id, ProfileSettingList, user_profiles)
+    suit_by_species = old_suit_by_parameter(profile_id, ProfileSpeciesList, user_profiles)
+    suit_by_rp_rating = old_suit_by_parameter(profile_id, ProfileRpRatingList, user_profiles)
+
+    timer['suit_by_parameters'] = time.time()
+    suit_profiles = list()
+
+    for i in list(suit_by_setting) + list(suit_by_gender) + list(suit_by_species) + list(suit_by_rp_rating):
+        if i.profile not in suit_profiles:
+            suit_profiles.append(i.profile)
+
+    timer['suit_profiles'] = time.time()
+    if need_sort:
+        suit_profiles_score = [{'profile': i,
+                                'score': (count_similarity_score(suit_by_gender, ProfileGenderList, i) +
+                                          count_similarity_score(suit_by_setting, ProfileSettingList, i) +
+                                          count_similarity_score(suit_by_species, ProfileSpeciesList, i) +
+                                          count_similarity_score(suit_by_rp_rating, ProfileRpRatingList, i))}
+                               for i in suit_profiles]
+        timer['profiles_score'] = time.time()
+
+        suit_profiles_score.sort(key=lambda x: x['score'], reverse=True)
+        suit_profiles_sorted = [i['profile'] for i in suit_profiles_score]
+
+        timer['profiles_sort'] = time.time()
+        return suit_profiles_sorted[offset:offset + count]
+    else:
+        return suit_profiles[offset:offset + count]
+    # print(f"user_profiles      = {timer['user_profiles'] - timer['start']}\n"
+    #       f"suit_by_parameters = {timer['suit_by_parameters'] - timer['user_profiles']}\n"
+    #       f"suit_profiles      = {timer['suit_profiles'] - timer['suit_by_parameters']}\n"
+    #       f"profiles_score     = {timer['profiles_score'] - timer['suit_profiles']}\n"
+    #       f"profiles_sort      = {timer['profiles_sort'] - timer['profiles_score']}\n")
+    #
+    # print('suit_profiles:', len(suit_profiles_sorted))
+    # for i in suit_profiles_sorted:
+    #     print(i.name)
+
+
+
+def reinit_tables():
+    db.drop_tables([
+        User,
+        RpProfile,
+        RoleOffer,
+        SettingList,
+        ProfileSettingList,
+        Notification,
+        RpRating,
+        ProfileRpRatingList,
+        Gender,
+        ProfileGenderList,
+        Species,
+        ProfileSpeciesList,
+        AvailableActions,
+        OptionalTag,
+        ProfileOptionalTagList,
+        BlockedUser,
+        UserPath
+    ])
+    init_db()
+
+
+def fill_test_db(user_count=10, profiles_per_user=2, tags_per_profile=2):
+    import random
+    tags = [RpRating, Gender, Species, SettingList]
+    profile_tags = [ProfileRpRatingList, ProfileGenderList, ProfileSpeciesList, ProfileSettingList]
+    for t_num, tag in enumerate(tags):
+        for tid in range(tags_per_profile * 2):
+            new_tag = tag().create_item()
+            new_tag.title = f"tag {t_num}.{tid}"
+            new_tag.save()
+    for uid in range(user_count):
+        User().create_user(user_id=uid, name=f"user {uid}", is_fem=random.randrange(2))
+        for pid in range(profiles_per_user):
+            new_profile = RpProfile().create_profile(user_id=uid)
+            for profile_tag in profile_tags:
+                tids = []
+                for t_num in range(tags_per_profile):
+                    tid = random.randrange(1, tags_per_profile * 2 + 1)
+                    while tid in tids:
+                        tid = random.randrange(1, tags_per_profile * 2 + 1)
+                    tids.append(tid)
+                    profile_tag().add(new_profile.get_id(), tid)
+        for pid in range(profiles_per_user):
+            RpProfile().create_profile(user_id=uid, search_preset=True)
+
+
+def speed_test(tests_count, profiles_count):
+    import time
+    tests1, tests2, tests3 = list(), list(), list()
+    for i in range(tests_count):
+        start = time.time()
+        find_suitable_profiles(1, profiles_count, 0)
+        tests1.append(time.time() - start)
+
+        start = time.time()
+        # old_find_suitable_profiles(1, profiles_count, 0, need_sort=False)
+        tests2.append(time.time() - start)
+
+        start = time.time()
+        # old_find_suitable_profiles(1, profiles_count, 0)
+        tests3.append(time.time() - start)
+    if tests_count > 1:
+        return sorted(tests1)[len(tests1)//2], sorted(tests2)[len(tests2)//2], sorted(tests3)[len(tests3)//2]
+    else:
+        return tests1[0], tests2[0], tests3[0]
+
+
 if __name__ == "__main__":
     # logging.basicConfig(format='%(filename)-15s[LINE:%(lineno)d]# %(levelname)-8s [%(asctime)s]  %(message)s',
     #                     level=logging.INFO)
@@ -576,5 +742,11 @@ if __name__ == "__main__":
     #     print(f'{t.id} - {t.title}')
     # t_id = int(input('delete id'))
     # print(TestField().delete_field(t_id))
-    update_db()
-    pass
+    # update_db()
+    # pass
+    for u_mult in range(1, 17):
+        user_count = 2 ** u_mult
+        reinit_tables()
+        fill_test_db(user_count=user_count, profiles_per_user=1, tags_per_profile=2)
+        # print('db filled')
+        print(user_count, *speed_test(3, 5))

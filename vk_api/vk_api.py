@@ -4,6 +4,7 @@ import random
 import os
 import json
 import logging
+from io import BytesIO
 
 
 class Api(object):
@@ -26,7 +27,7 @@ class Api(object):
 
         try:
             request = self.VK_API.post(self.vk_url + method, parameters, timeout=10)
-            if request.status_code == 200:
+            if request.ok:
                 if request.json().get('error', {'error_code': 0})['error_code'] == 6:  # too many requests
                     return self.request_get(method, parameters)
                 return request.json()
@@ -164,6 +165,56 @@ return admins.items;
         except Exception as error_msg:
             logging.error(f'unread_msg: {unread_msg} error: {error_msg}')
             return []
+
+    def upload_image(self, image_url, peer_id=0, default_image='', group_id=None,
+                     server_method='photos.getMessagesUploadServer',
+                     save_method='photos.saveMessagesPhoto'):
+        dir_path = os.path.abspath('img')
+        if not os.path.exists(dir_path):
+            os.makedirs(dir_path)
+        upload_params = {}
+        if peer_id:
+            upload_params.update({'peer_id': peer_id})
+        if group_id:
+            upload_params.update({'group_id': group_id})
+        upload_server = self.request_get(server_method, upload_params)
+        if 'response' not in upload_server:
+            logging.error(f'upload_server: {upload_server}')
+            return default_image
+        upload_url = upload_server['response']['upload_url']
+        filename = os.path.join(dir_path, image_url.split('/')[-1])
+
+        with BytesIO() as img_buffer:
+            resp = self.VK_API.get(image_url)
+            if resp.ok:
+                img_buffer.write(resp.content)
+            else:
+                logging.error(f'download file: {resp.status_code}')
+                return default_image
+            file = {'photo': (filename, img_buffer.getvalue())}
+            upload_image = self.VK_API.post(upload_url, files=file)
+        if upload_image.ok:
+            upload_response = upload_image.json()
+        else:
+            logging.error(f'upload file: {upload_image.status_code}')
+            if os.path.exists(filename):
+                os.remove(filename)
+            return default_image
+
+        image_params = {
+            'photo': upload_response['photo'],
+            'server': upload_response['server'],
+            'hash': upload_response['hash'],
+        }
+        if group_id:
+            image_params.update({'group_id': group_id})
+        save_image = self.request_get(save_method, image_params)
+        if 'response' not in save_image:
+            logging.error(f'save_image: {save_image}')
+            return default_image
+        print('save_image', save_image)
+        vk_image = save_image['response'][0]
+        return f"photo{vk_image['owner_id']}_{vk_image['id']}_{vk_image['access_key']}"
 
 
 class UserApi(object):

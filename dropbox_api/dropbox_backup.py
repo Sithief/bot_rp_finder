@@ -3,7 +3,7 @@ import requests
 import json
 import logging
 import os
-from vk_api.Keys import Keys
+from bot_rp_finder.vk_api.Keys import Keys
 
 
 def upload_file(file_name):
@@ -22,9 +22,9 @@ def upload_file(file_name):
                 "Dropbox-API-Arg": json.dumps(dropbox_arg, ensure_ascii=False)
             }
             r = requests.post(url, headers=headers, data=open(file_name, 'rb').read())
-            logging.info(f'upload backup to dropbox {r.status_code}')
+            print(f'upload backup to dropbox {r.status_code}')
         except Exception as e:
-            logging.error(f'dropbox Exception: {e}')
+            print(f'dropbox Exception: {e}')
 
 
 def backup_db():

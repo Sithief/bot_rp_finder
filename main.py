@@ -1,13 +1,9 @@
 import threading
 import queue
 import logging
-import traceback
-import sys
-import os
 import time
+import sys
 from flask import Flask, request
-import configparser
-from logging.handlers import RotatingFileHandler
 from menu import menu, user_profile
 from menu.execute_time import Timer
 from vk_api import vk_api, longpoll, msg_send
@@ -16,39 +12,22 @@ from database import db_api
 from dropbox_api import dropbox_backup
 from menu import notification
 from menu.token import Token
+from __init__ import *
 
 
 app = Flask(__name__)
 
 
-def init_logging():
-    log_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'log')
-    if not os.path.exists(log_path):
-        os.makedirs(log_path)
-    logging.basicConfig(
-        handlers=[RotatingFileHandler(os.path.join(log_path, 'my_log.log'), maxBytes=100000, backupCount=10)],
-        format='%(filename)-25s[LINE:%(lineno)d]# %(levelname)-8s [%(asctime)s]  %(message)s',
-        level=logging.DEBUG,
-        datefmt='%m-%d %H:%M',
-    )
-    # console = logging.StreamHandler()
-    # console.setLevel(logging.INFO)
-    # formatter = logging.Formatter('%(name)-12s: %(levelname)-8s %(message)s')
-    # console.setFormatter(formatter)
-    # logging.getLogger('').addHandler(console)
+def init():
+    if 'update_db' in sys.argv:
+        db_api.update_db()
 
+    for msg in bot_api.unanswered():
+        message_processing(msg)
 
-def foo(exctype, value, tb):
-    import logging
-    import time
-    init_logging()
-    logging.critical(f'EXCEPTION: Type: {exctype}, Value: {value}')
-    log_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'log')
-    if not os.path.exists(log_path):
-        os.makedirs(log_path)
-    with open(os.path.join(log_path, 'bot_errors.log'), 'w') as error_file:
-        error_file.write(time.asctime() + '\n')
-        traceback.print_exception(exctype, value, tb, file=error_file)
+    admin_list = bot_api.get_admins()
+    db_api.init_db()
+    db_api.update_admins(admin_list)
 
 
 def init_messages_get_thread():
@@ -70,38 +49,6 @@ def init_messages_send_threads(count):
     return stdout, senders
 
 
-def init():
-    global uptime
-    uptime = time.time()
-    global timers
-    timers = list()
-    global events
-    events = list()
-    import os
-    current_path = os.path.dirname(os.path.abspath(__file__))
-    global CONF
-    CONF = configparser.ConfigParser()
-    CONF.read(os.path.join(current_path, 'bot_settings.inf'), encoding='utf-8')
-    init_logging()
-    sys.excepthook = foo
-
-    if 'update_db' in sys.argv:
-        db_api.update_db()
-
-    global bot_api
-    bot_api = vk_api.Api(CONF.get('VK', 'token', fallback='no confirm'), 'main')
-    if not bot_api.valid:
-        logging.error('Токен для VK API не подходит')
-        exit(1)
-
-    for msg in bot_api.unanswered():
-        message_processing(msg)
-
-    admin_list = bot_api.get_admins()
-    db_api.init_db()
-    db_api.update_admins(admin_list)
-
-
 def message_processing(msg):
     print('usr msg:', msg)
     user_token = Token(msg)
@@ -120,13 +67,7 @@ def message_processing(msg):
     actions = vk_api.get_actions_from_buttons(bot_message['keyboard'])
     db_api.AvailableActions().update_actions(msg['from_id'], actions)
 
-    if user_token.menu_id == 'save_images':
-        msg_id = bot_api.msg_send(msg['peer_id'], bot_message)
-        if msg_id:
-            message = bot_api.msg_get(msg_id)
-            user_profile.update_images(message)
-    else:
-        bot_api.msg_send(peer_id=msg['peer_id'], payload=bot_message)
+    bot_api.msg_send(peer_id=msg['peer_id'], payload=bot_message)
     notification.send_unread_notifications(bot_api)
     # if new_messages:
     #     timer.time_stamp('total')
