@@ -3,7 +3,11 @@ import requests
 import json
 import logging
 import os
-from bot_rp_finder.vk_api.Keys import Keys
+import sys
+project_home = os.path.abspath('..')
+if project_home not in sys.path:
+    sys.path = [project_home] + sys.path
+from vk_api.Keys import Keys
 
 
 def upload_file(file_name):
@@ -22,8 +26,10 @@ def upload_file(file_name):
                 "Dropbox-API-Arg": json.dumps(dropbox_arg, ensure_ascii=False)
             }
             r = requests.post(url, headers=headers, data=open(file_name, 'rb').read())
-            print(f'upload backup to dropbox {r.status_code}')
+            logging.info(f'upload backup to dropbox {r.status_code}')
+            print(f'{time.ctime(time.time())} upload backup to dropbox {r.status_code}')
         except Exception as e:
+            logging.error(f'dropbox Exception: {e}')
             print(f'dropbox Exception: {e}')
 
 
