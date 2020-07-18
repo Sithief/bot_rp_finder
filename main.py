@@ -51,7 +51,7 @@ def init_messages_send_threads(count):
 
 def message_processing(msg):
     print('usr msg:', msg)
-    if msg.get('cropped'):
+    if msg.get('is_cropped'):
         full_msg = bot_api.msg_get(message_id=msg.get('id'))
         if full_msg:
             msg = full_msg
