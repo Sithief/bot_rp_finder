@@ -23,16 +23,14 @@ def init_logging():
     # formatter = logging.Formatter('%(name)-12s: %(levelname)-8s %(message)s')
     # console.setFormatter(formatter)
     # logging.getLogger('').addHandler(console)
+    return log_path
 
 
-def foo(exctype, value, tb):
+def log_excepthook(exctype, value, tb):
     import logging
     import time
-    init_logging()
+    log_path = init_logging()
     logging.critical(f'EXCEPTION: Type: {exctype}, Value: {value}')
-    log_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'log')
-    if not os.path.exists(log_path):
-        os.makedirs(log_path)
     with open(os.path.join(log_path, 'bot_errors.log'), 'w') as error_file:
         error_file.write(time.asctime() + '\n')
         traceback.print_exception(exctype, value, tb, file=error_file)
@@ -45,7 +43,7 @@ current_path = os.path.dirname(os.path.abspath(__file__))
 CONF = configparser.ConfigParser()
 CONF.read(os.path.join(current_path, 'bot_settings.inf'), encoding='utf-8')
 init_logging()
-sys.excepthook = foo
+sys.excepthook = log_excepthook
 bot_api = vk_api.Api(CONF.get('VK', 'token', fallback='no confirm'), 'main')
 if not bot_api.valid:
     logging.error('Токен для VK API не подходит')

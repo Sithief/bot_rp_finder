@@ -346,11 +346,12 @@ def save_images(user):
         message = f'Это не слишком похоже на подходящие для анкеты изображения. Попробуйте загрузить заново.'
         return {'message': message, 'keyboard': [[button_return, button_try_again]]}
 
-    images = list()
-    for url in img_urls:
-        img = bot_api.upload_image(url)
-        if img:
-            images.append(img)
+    # images = list()
+    # for url in img_urls:
+    #     img = bot_api.upload_image(url)
+    #     if img:
+    #         images.append(img)
+    images = bot_api.upload_image_list(img_urls)
 
     user_info = db_api.User().get_user(user.info.id)
     if user_info:

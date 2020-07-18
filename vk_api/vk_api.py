@@ -4,6 +4,8 @@ import random
 import os
 import json
 import logging
+import threading
+import concurrent.futures
 from io import BytesIO
 
 
@@ -215,6 +217,15 @@ return admins.items;
         print('save_image', save_image)
         vk_image = save_image['response'][0]
         return f"photo{vk_image['owner_id']}_{vk_image['id']}_{vk_image['access_key']}"
+
+    def upload_image_list(self, image_urls, peer_id=0, default_image='', group_id=None,
+                          server_method='photos.getMessagesUploadServer',
+                          save_method='photos.saveMessagesPhoto'):
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            futures = [executor.submit(self.upload_image, image_url, peer_id,
+                                       default_image, group_id, server_method, save_method)
+                       for image_url in image_urls]
+            return [f.result() for f in futures]
 
 
 class UserApi(object):

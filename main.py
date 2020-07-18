@@ -51,6 +51,10 @@ def init_messages_send_threads(count):
 
 def message_processing(msg):
     print('usr msg:', msg)
+    if msg.get('cropped'):
+        full_msg = bot_api.msg_get(message_id=msg.get('id'))
+        if full_msg:
+            msg = full_msg
     user_token = Token(msg)
     if not user_token.info:
         vk_user_info = bot_api.get_user_info(msg['from_id'])
