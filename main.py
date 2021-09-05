@@ -50,7 +50,7 @@ def init_messages_send_threads(count):
 
 
 def message_processing(msg):
-    print('usr msg:', msg)
+    # print('usr msg:', msg)
     if msg.get('is_cropped'):
         full_msg = bot_api.msg_get(message_id=msg.get('id'))
         if full_msg:
@@ -67,7 +67,7 @@ def message_processing(msg):
             pass
 
     bot_message = menu.menu_hub(user_token)
-    print('bot_msg', bot_message)
+    # print('bot_msg', bot_message)
     actions = vk_api.get_actions_from_buttons(bot_message['keyboard'])
     db_api.AvailableActions().update_actions(msg['from_id'], actions)
 

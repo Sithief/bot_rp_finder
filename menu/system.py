@@ -129,9 +129,7 @@ def rp_profile_display(profile_id):
 
 
 def empty_func(user):
-    message = 'Этого меню еще нет, но раз вы сюда пришли, вот вам монетка!'
-    user.info.money += 1
-    user.info.save()
+    message = 'Похоже произошла какая-то ошибка.'
     button_1 = vk_api.new_button('Главное меню', {'m_id': 'main', 'args': None}, 'primary')
     return {'message': message, 'keyboard': [[button_1]]}
 

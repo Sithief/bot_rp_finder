@@ -11,9 +11,9 @@ def menu_hub(token):
     menus.update(notification.get_menus())
     menus.update(admin.get_menus())
 
-    if token.menu_id in menus:
+    try:
         return menus[token.menu_id](token)
-    else:
+    except Exception:
         return system.empty_func(token)
 
 
