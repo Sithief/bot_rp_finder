@@ -46,7 +46,7 @@ class Keys:
             logging.info(f'Директрия {data_path} не обнаружена и будет создана')
             os.makedirs(data_path)
 
-        self.__db_filename = os.path.join(os.path.realpath(data_path), db_filename)
+        self.__db_filename = db_filename
         self.__keys_filename = os.path.join(data_path, keys_filename)
 
         if not os.path.exists(self.__keys_filename):

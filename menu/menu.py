@@ -1,3 +1,4 @@
+import traceback
 from vk_api import vk_api
 from database import db_api
 from menu import system, admin, user_profile, search, notification
@@ -13,7 +14,8 @@ def menu_hub(token):
 
     try:
         return menus[token.menu_id](token)
-    except Exception:
+    except Exception as e:
+        print(traceback.format_exc())
         return system.empty_func(token)
 
 

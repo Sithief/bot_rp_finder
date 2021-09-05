@@ -3,13 +3,15 @@ import logging
 import json
 import time
 from bot_rp_finder.vk_api.Keys import Keys
+from playhouse.db_url import connect
 
 db_filename = Keys().get_db_filename()
-db = peewee.SqliteDatabase(db_filename, pragmas={'journal_mode': 'wal',
-                                                 'cache_size': 64,
-                                                 'foreign_keys': 1,
-                                                 'ignore_check_constraints': 0,
-                                                 'synchronous': 0})
+# db = peewee.SqliteDatabase(db_filename, pragmas={'journal_mode': 'wal',
+#                                                  'cache_size': 64,
+#                                                  'foreign_keys': 1,
+#                                                  'ignore_check_constraints': 0,
+#                                                  'synchronous': 0})
+db = connect(db_filename)
 profile_actual_time = 31 * 24 * 60 * 60
 
 

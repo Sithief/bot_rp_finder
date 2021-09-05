@@ -124,7 +124,10 @@ def rp_profile_display(profile_id):
 
     if not rp_profile.search_preset:
         profile['message'] += f'Описание: {rp_profile.description}\n'
-        profile['attachment'] = ','.join(json.loads(rp_profile.arts))
+        try:
+            profile['attachment'] = ','.join(json.loads(rp_profile.arts))
+        except:
+            pass
     return profile
 
 
